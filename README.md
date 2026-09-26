@@ -33,7 +33,7 @@ cd backend/StudyPlatform.Api
 dotnet run
 ```
 
-A API usa `ConnectionStrings:DefaultConnection`. O perfil local carrega essa configuração de `appsettings.Development.json`; ela pode ser substituída pela variável de ambiente `ConnectionStrings__DefaultConnection`. O contexto do EF Core está configurado para PostgreSQL, mas ainda não há entidades nem migrations de domínio.
+A API usa ConnectionStrings:DefaultConnection. O perfil local carrega essa configuração de appsettings.Development.json; ela pode ser substituída pela variável de ambiente ConnectionStrings__DefaultConnection. O contexto do EF Core e a migration inicial InitialDomain estão configurados para PostgreSQL.
 
 O endpoint `http://localhost:5080/health` confirma que a aplicação iniciou e que a configuração de conexão foi carregada. Nesta etapa ele não executa uma consulta ao banco.
 
@@ -95,3 +95,33 @@ dotnet test backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj
 ├── docker-compose.yml
 └── docs/
 ```
+
+## Migrations e horários
+
+Instale a ferramenta EF Core CLI compatível com a versão do projeto:
+
+~~~bash
+dotnet tool install --global dotnet-ef --version 10.0.0
+~~~
+
+Para criar uma migration após alterações futuras no modelo e aplicá-la:
+
+~~~bash
+dotnet ef migrations add NomeDaMigracao --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --output-dir Migrations
+dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
+~~~
+
+Para reverter todas as migrations no banco local de desenvolvimento e remover a migration mais recente do projeto:
+
+~~~bash
+dotnet ef database update 0 --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
+dotnet ef migrations remove --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
+~~~
+
+database update 0 remove as tabelas criadas pelas migrations e seus dados; use-o somente em um banco local descartável ou depois de fazer backup.
+
+Os campos de data e hora do domínio são DateTime em UTC, identificados pelo sufixo Utc, e são mapeados para timestamp with time zone no PostgreSQL. Crie e atualize esses valores com DateTime.UtcNow; o Npgsql espera valores UTC para esse tipo.
+
+A migration usa uma coluna gerada lower(Code) e um índice único para o código da turma ser case-insensitive. EmailNormalized segue o mesmo mecanismo para tratar e-mails sem distinção de caixa. O limite de 32 caracteres para o código da turma é a decisão de tamanho máximo razoável adotada nesta implementação.
+
+Cada tentativa exige um snapshot JSONB do conteúdo apresentado, para preservar o que o aluno viu mesmo se o conteúdo do conceito ou atividade for editado ou desativado.
