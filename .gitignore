@@ -1,0 +1,21 @@
+# Node.js / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+
+# Local configuration and environment files
+.env
+.env.*
+!.env.example
+
+# IDE and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
