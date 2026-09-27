@@ -1,0 +1,68 @@
+﻿.panel {
+  padding: 1.4rem;
+  border: 1px solid #303747;
+  border-radius: 1rem;
+  background: #191e29;
+}
+
+.modeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.modeList button,
+.submit {
+  border: 1px solid #48536b;
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  color: #eef1fb;
+  background: #252c3a;
+  cursor: pointer;
+}
+
+.modeList button[aria-pressed='true'],
+.submit {
+  border-color: #8491ff;
+  background: #515fc1;
+}
+
+.panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.9rem 0;
+  color: #d7dced;
+  font-size: 0.92rem;
+}
+
+.field input {
+  width: 100%;
+  border: 1px solid #444e62;
+  border-radius: 0.55rem;
+  padding: 0.75rem;
+  color: #f4f6fb;
+  background: #11151e;
+  font: inherit;
+}
+
+.field input:focus-visible,
+.modeList button:focus-visible,
+.submit:focus-visible {
+  outline: 3px solid #aab2ff;
+  outline-offset: 2px;
+}
+
+.submit:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.error {
+  color: #ffb4b4;
+}

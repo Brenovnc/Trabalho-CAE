@@ -1,13 +1,13 @@
-.page {
+﻿.page {
   display: grid;
   min-height: 100vh;
   place-items: center;
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .card {
-  width: min(100%, 42rem);
-  padding: clamp(2rem, 7vw, 4rem);
+  width: min(100%, 48rem);
+  padding: clamp(1.25rem, 5vw, 2.75rem);
   border: 1px solid #303747;
   border-radius: 1.25rem;
   background: #191e29;
@@ -15,24 +15,67 @@
 }
 
 .eyebrow {
-  margin: 0 0 0.75rem;
-  color: #9ca9ff;
+  margin: 0 0 0.65rem;
+  color: #aab2ff;
   font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .card h1 {
   margin: 0;
-  font-size: clamp(2rem, 7vw, 3.5rem);
+  font-size: clamp(1.8rem, 6vw, 2.8rem);
   line-height: 1.1;
 }
 
 .description {
-  max-width: 34rem;
-  margin: 1.25rem 0 0;
+  margin: 0.85rem 0 1.5rem;
   color: #bdc5d5;
-  font-size: 1.1rem;
   line-height: 1.6;
+}
+
+.notice {
+  color: #cad0ff;
+}
+
+.identity {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid #303747;
+  border-radius: 0.85rem;
+  background: #121721;
+}
+
+.identity h2 {
+  margin-top: 0;
+}
+
+.identity dl {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.35fr) 1fr;
+  gap: 0.65rem 1rem;
+  overflow-wrap: anywhere;
+}
+
+.identity dt {
+  color: #aab2c5;
+}
+
+.identity dd {
+  margin: 0;
+}
+
+.logout {
+  border: 1px solid #596684;
+  border-radius: 0.55rem;
+  padding: 0.65rem 1rem;
+  color: #fff;
+  background: #343e54;
+  cursor: pointer;
+}
+
+.logout:focus-visible {
+  outline: 3px solid #aab2ff;
+  outline-offset: 2px;
 }

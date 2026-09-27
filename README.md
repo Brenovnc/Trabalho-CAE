@@ -37,6 +37,24 @@ A API usa ConnectionStrings:DefaultConnection. O perfil local carrega essa confi
 
 O endpoint `http://localhost:5080/health` confirma que a aplicação iniciou e que a configuração de conexão foi carregada. Nesta etapa ele não executa uma consulta ao banco.
 
+
+## Autenticação local
+
+A API usa `http://localhost:5080` e permite em Development apenas a origem `http://localhost:5173`, com credenciais. Para outra porta, ajuste `Frontend:Origin` em `appsettings.Development.json`. CORS não é aberto em produção.
+
+Antes de qualquer operação POST/PUT/PATCH/DELETE em `/api`, o cliente obtém `GET /api/auth/csrf`. A resposta contém `token` e define o cookie HTTP-only `CAE-XSRF`; envie o token retornado no cabeçalho `X-CSRF-TOKEN`. O cliente React mantém o token somente em memória e envia cookies com `credentials: include`. Após login, cadastro, ativação ou logout, ele solicita outro token, pois o antiforgery associa o token à identidade atual.
+
+Em Development, as chaves de cookies e CSRF ficam apenas na memória; reiniciar a API invalida as sessões locais. Fora de Development, configure armazenamento persistente e compartilhado de chaves para a implantação.
+
+A sessão usa o cookie HTTP-only `CAE.Auth`, `SameSite=Strict` e expira em oito horas. Em HTTP de Development, `Secure` segue o esquema da requisição; fora de Development é sempre habilitado. Endpoints disponíveis: `POST /api/auth/teachers/register`, `POST /api/auth/teachers/login`, `POST /api/auth/students/activate`, `POST /api/auth/students/login`, `POST /api/auth/logout` e `GET /api/auth/me`.
+
+Os testes HTTP xUnit usam um banco PostgreSQL exclusivo chamado `trabalho_cae_auth_test`, separado do banco local do produto. Crie-o uma vez com PostgreSQL iniciado:
+
+~~~bash
+docker compose exec postgres psql -U trabalho_cae -d postgres -c "CREATE DATABASE trabalho_cae_auth_test;"
+~~~
+
+O teste aplica as migrations e limpa as tabelas desse banco de teste. Nunca configure `STUDYPLATFORM_TEST_CONNECTION` para o banco normal de desenvolvimento.
 ## Iniciar o frontend
 
 Em outro terminal:
