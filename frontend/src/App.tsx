@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from 'react'
 import { AuthForm } from './pages/auth/AuthForm'
+import { ModulesPage } from './pages/modules/ModulesPage'
 import { ApiRequestError, getCurrentUser, logout, prepareCsrfToken, submitAuth } from './services/authApi'
 import type { AuthenticatedUser, AuthMode } from './types/auth'
 import styles from './App.module.css'
@@ -43,6 +44,8 @@ function App() {
       setNotice(error instanceof Error ? error.message : 'Não foi possível encerrar a sessão.')
     }
   }
+
+  if (ready && user?.role === 'TEACHER') return <ModulesPage onLogout={() => void handleLogout()} />
 
   return (
     <main className={styles.page}>

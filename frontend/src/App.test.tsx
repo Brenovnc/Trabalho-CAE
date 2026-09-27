@@ -2,7 +2,9 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AuthForm } from './pages/auth/AuthForm'
+import { ModulesPage } from './pages/modules/ModulesPage'
 import { getCurrentUser, prepareCsrfToken, submitAuth } from './services/authApi'
+import { moduleApi } from './services/moduleApi'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -52,5 +54,27 @@ describe('authentication interface and API client', () => {
       code: 'invalid_credentials',
       message: 'Credenciais inválidas.',
     })
+  })
+
+  it('renders the basic module management screen', () => {
+    const markup = renderToStaticMarkup(createElement(ModulesPage, { onLogout: () => {} }))
+    expect(markup).toContain('Gestão de módulos')
+    expect(markup).toContain('Novo módulo')
+    expect(markup).toContain('Meus módulos')
+  })
+
+  it('sends cookies and CSRF when publishing and shows publication errors', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ token: 'module-csrf' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        isValid: false, errors: [{ conceptId: 'concept', code: 'missing_fill_blank_activities', message: 'O conceito precisa de mais atividades de lacunas.' }],
+      }), { status: 422 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(moduleApi.publish('module-id')).rejects.toThrow('atividades de lacunas')
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ credentials: 'include' })
+    const mutation = fetchMock.mock.calls[1][1] as RequestInit
+    expect(mutation.credentials).toBe('include')
+    expect(new Headers(mutation.headers).get('X-CSRF-TOKEN')).toBe('module-csrf')
   })
 })

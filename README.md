@@ -143,3 +143,9 @@ Os campos de data e hora do domínio são DateTime em UTC, identificados pelo su
 A migration usa uma coluna gerada lower(Code) e um índice único para o código da turma ser case-insensitive. EmailNormalized segue o mesmo mecanismo para tratar e-mails sem distinção de caixa. O limite de 32 caracteres para o código da turma é a decisão de tamanho máximo razoável adotada nesta implementação.
 
 Cada tentativa exige um snapshot JSONB do conteúdo apresentado, para preservar o que o aluno viu mesmo se o conteúdo do conceito ou atividade for editado ou desativado.
+
+## Gestão de conteúdo pedagógico
+
+A Etapa 5 usa rotas aninhadas sob `/api/modules`. Conceitos e todas as suas keywords, pistas, pré-requisitos e atividades são criados/editados como um único recurso agregado em `POST/PUT /api/modules/{moduleId}/concepts/{conceptId}`. Isso mantém a gravação coerente e dá ao frontend um contrato previsível. Atividades omitidas em uma edição são desativadas para preservar tentativas; keywords e pistas são atualizadas pela lista e posição, respectivamente.
+
+Rotas adicionais: `GET/POST /api/modules`, `GET/PUT /api/modules/{id}`, `POST /api/modules/{id}/duplicate|publish|archive`, `GET /api/modules/{id}/publication-validation`, `GET /api/modules/{moduleId}/concepts`, `GET /api/modules/{moduleId}/concepts/{conceptId}`, `POST /api/modules/{moduleId}/concepts/{conceptId}/duplicate|deactivate`.

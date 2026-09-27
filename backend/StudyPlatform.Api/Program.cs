@@ -8,6 +8,8 @@ using StudyPlatform.Api.DTOs.Auth;
 using StudyPlatform.Api.Middleware;
 using StudyPlatform.Api.Models;
 using StudyPlatform.Api.Services.Auth;
+using StudyPlatform.Api.Services.Learning;
+using StudyPlatform.Api.Services.Modules;
 using StudyPlatform.Api.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ModuleService>();
+builder.Services.AddScoped<PrerequisiteService>();
 builder.Services.AddScoped<IPasswordHasher<Teacher>, PasswordHasher<Teacher>>();
 builder.Services.AddScoped<IPasswordHasher<Student>, PasswordHasher<Student>>();
 builder.Services.AddScoped<ApiCookieAuthenticationEvents>();
