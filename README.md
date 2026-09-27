@@ -161,3 +161,18 @@ O backend inclui conteúdo e atividades ativos ou inativos na exportação para 
 Na Etapa 7, a gestão usa as rotas `/api/classrooms` e recursos aninhados `/api/classrooms/{id}/modules` e `/api/classrooms/{id}/students`. Apenas professores podem usá-las. O código da turma é normalizado para maiúsculas e aceita de 3 a 32 caracteres alfanuméricos, com hífens somente entre grupos (por exemplo, `TURMA-A`).
 
 O cadastro e a redefinição retornam o código temporário uma única vez. Ele possui seis caracteres do alfabeto `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, gerados por `RandomNumberGenerator`, e expira em sete dias. O banco conserva somente o hash produzido pelo `PasswordHasher<Student>`. Após reset, a senha anterior deixa de funcionar; a ativação da Etapa 4 consome o código novo.
+
+## Importação de alunos por CSV (Etapa 8)
+
+Na tela da turma, selecione um arquivo de até 1 MiB e analise-o antes de confirmar. O formato UTF-8 aceita BOM, CRLF/LF e campos CSV entre aspas; o cabeçalho obrigatório é matricula, e nome é opcional. Colunas desconhecidas ou repetidas são rejeitadas. Matrículas preservam zeros à esquerda e seguem a mesma comparação exata do cadastro manual.
+
+Exemplo:
+
+    matricula,nome
+    12345,João
+    12346,Maria
+    12347,
+
+O preview não grava dados nem gera códigos. A confirmação reenvia e revalida o mesmo arquivo; linhas inválidas, duplicadas no arquivo ou já cadastradas são ignoradas, enquanto as demais podem ser importadas. O limite é de 2.000 linhas de dados. Após a confirmação, o navegador baixa imediatamente matricula,nome,codigo_temporario apenas para alunos criados. Códigos não são recuperáveis depois; em caso de perda, redefina o acesso do aluno.
+
+Endpoints do fluxo: POST /api/classrooms/{classroomId}/students/import/preview e POST /api/classrooms/{classroomId}/students/import/confirm. Ambos exigem sessão de professor e token CSRF.

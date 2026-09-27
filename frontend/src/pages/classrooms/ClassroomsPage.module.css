@@ -11,3 +11,8 @@ li { padding: .55rem 0; }
 .error { color: #ff9b9b; } .notice { color: #9ee8bf; }
 .oneTime { border-color: #60b88c; } .oneTime code { display: block; font-size: 1.6rem; letter-spacing: .2rem; margin: .75rem 0; }
 @media (max-width: 700px) { .columns, .header, .form { flex-direction: column; align-items: stretch; } }
+.csvImport { border-top: 1px solid #30394d; margin-top: 1.5rem; padding-top: 1rem; }
+.csvTableWrap { overflow-x: auto; }
+.csvTable { width: 100%; border-collapse: collapse; margin: .75rem 0; }
+.csvTable th, .csvTable td { border: 1px solid #46516a; padding: .5rem; text-align: left; }
+.csvTable tr[data-valid='false'] { color: #ffb0b0; background: #351d27; }

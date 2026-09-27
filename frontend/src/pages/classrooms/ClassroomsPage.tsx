@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, type FormEvent } from 'react'
-import { classroomApi, type ClassroomDetails, type ClassroomSummary, type OneTimeCredentials, type Student } from '../../services/classroomApi'
+import { classroomApi, type ClassroomDetails, type ClassroomSummary, type OneTimeCredentials, type Student, type StudentCsvPreview } from '../../services/classroomApi'
 import { moduleApi } from '../../services/moduleApi'
 import type { ModuleSummary } from '../../types/modules'
 import styles from './ClassroomsPage.module.css'
@@ -16,6 +16,9 @@ export function ClassroomsPage({ onLogout, onModules }: Props) {
   const [enrollment, setEnrollment] = useState(''); const [studentName, setStudentName] = useState('')
   const [moduleId, setModuleId] = useState('')
   const [credentials, setCredentials] = useState<OneTimeCredentials | null>(null)
+  const [csvFile, setCsvFile] = useState<File | null>(null)
+  const [csvPreview, setCsvPreview] = useState<StudentCsvPreview | null>(null)
+  const [csvResult, setCsvResult] = useState<{ createdCount: number; skippedRows: StudentCsvPreview['rows'] } | null>(null)
   const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [busy, setBusy] = useState(false)
 
   async function refresh() { setItems(await classroomApi.list()) }
@@ -48,6 +51,29 @@ export function ClassroomsPage({ onLogout, onModules }: Props) {
     catch (cause) { setError(messageOf(cause)) } finally { setBusy(false) }
   }
   async function copyCode() { if (credentials) await navigator.clipboard.writeText(credentials.temporaryAccessCode) }
+  async function previewCsv(event: FormEvent) {
+    event.preventDefault(); if (!selected || !csvFile) return
+    setBusy(true); setError(''); setNotice(''); setCsvResult(null)
+    try { setCsvPreview(await classroomApi.previewCsv(selected.id, csvFile)) }
+    catch (cause) { setError(messageOf(cause)); setCsvPreview(null) } finally { setBusy(false) }
+  }
+
+  async function confirmCsv() {
+    if (!selected || !csvFile) return
+    setBusy(true); setError(''); setNotice('')
+    try {
+      const result = await classroomApi.confirmCsv(selected.id, csvFile)
+      const blob = new Blob(['\uFEFF', result.credentialsCsv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url; anchor.download = 'credenciais-' + selected.code.toLowerCase() + '.csv'; anchor.click()
+      URL.revokeObjectURL(url)
+      setCsvResult({ createdCount: result.createdCount, skippedRows: result.skippedRows })
+      setCsvPreview(null); setCsvFile(null)
+      setNotice(result.createdCount + ' aluno(s) cadastrado(s). O CSV de códigos foi baixado agora e não poderá ser recuperado depois.')
+      await open(selected.id)
+    } catch (cause) { setError(messageOf(cause)) } finally { setBusy(false) }
+  }
 
   return <main className={styles.page}>
     <header className={styles.header}><div><p>Área do professor</p><h1>Turmas e alunos</h1></div><div><button type="button" onClick={onModules}>Módulos</button> <button type="button" onClick={onLogout}>Sair</button></div></header>
@@ -63,6 +89,11 @@ export function ClassroomsPage({ onLogout, onModules }: Props) {
         <form className={styles.form} onSubmit={e => { e.preventDefault(); if (moduleId) void run(() => classroomApi.assign(selected.id, moduleId), 'Módulo associado.') }}><label>Associar módulo publicado<select value={moduleId} onChange={e => setModuleId(e.target.value)}><option value="">Selecione…</option>{modules.filter(m => m.status === 1 || m.status === 'Published').map(m => <option key={m.id} value={m.id}>{m.title}</option>)}</select></label><button disabled={busy || !moduleId}>Associar</button></form>
       </section>
       <section className={styles.panel}><h2>Alunos</h2><form className={styles.form} onSubmit={e => void createStudent(e)}><label>Matrícula<input required maxLength={64} value={enrollment} onChange={e => setEnrollment(e.target.value)} /></label><label>Nome (opcional)<input maxLength={120} value={studentName} onChange={e => setStudentName(e.target.value)} /></label><button disabled={busy || selected.status === 'Archived'}>Cadastrar e gerar código</button></form>
+        <section className={styles.csvImport} aria-labelledby="csv-import-title"><h3 id="csv-import-title">Importar alunos por CSV</h3><p>Colunas aceitas: <code>matricula</code> e, opcionalmente, <code>nome</code>. Somente linhas válidas serão cadastradas. Códigos temporários são disponibilizados uma única vez no download após confirmar.</p>
+          <form className={styles.form} onSubmit={e => void previewCsv(e)}><label>Arquivo CSV (até 1 MiB)<input type="file" accept=".csv,text/csv" onChange={e => { setCsvFile(e.target.files?.[0] ?? null); setCsvPreview(null); setCsvResult(null) }} /></label><button disabled={busy || selected.status === 'Archived' || !csvFile}>Analisar CSV</button></form>
+          {csvPreview && <><p role="status">{csvPreview.totalRows} linhas: {csvPreview.validRows} válidas e {csvPreview.invalidRows} inválidas. A confirmação reanalisa o arquivo; apenas válidas serão cadastradas.</p><div className={styles.csvTableWrap}><table className={styles.csvTable}><thead><tr><th>Linha</th><th>Matrícula</th><th>Nome</th><th>Estado / erros</th></tr></thead><tbody>{csvPreview.rows.map(row => <tr key={row.lineNumber} data-valid={row.isValid}><td>{row.lineNumber}</td><td>{row.enrollmentNumber || '—'}</td><td>{row.name || '—'}</td><td>{row.isValid ? 'Válida' : row.errors.join(' ')}</td></tr>)}</tbody></table></div><button type="button" disabled={busy || !csvPreview.validRows} onClick={() => void confirmCsv()}>Confirmar {csvPreview.validRows} linha(s) válida(s)</button></>}
+          {csvResult && <><p role="status">Criados: {csvResult.createdCount}. Ignorados: {csvResult.skippedRows.length}.</p>{csvResult.skippedRows.length > 0 && <ul>{csvResult.skippedRows.map(row => <li key={row.lineNumber}>Linha {row.lineNumber}: {row.errors.join(' ')}</li>)}</ul>}</>}
+        </section>
         {students.length ? <ul>{students.map(student => <li key={student.id}><strong>{student.enrollmentNumber}</strong> {student.name ?? '—'} · {student.isActive ? (student.isActivated ? 'Ativo' : 'Aguardando ativação') : 'Desativado'} <button type="button" disabled={busy || !student.isActive} onClick={() => void oneTime(() => classroomApi.resetAccess(selected.id, student.id))}>Redefinir acesso</button><button type="button" disabled={busy || !student.isActive} onClick={() => void run(() => classroomApi.deactivate(selected.id, student.id), 'Aluno desativado.')}>Desativar</button></li>)}</ul> : <p>Nenhum aluno cadastrado.</p>}
       </section>
     </>}

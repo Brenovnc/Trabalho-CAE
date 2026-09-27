@@ -32,3 +32,19 @@ describe('classroom API', () => {
   })
 })
 
+describe('student CSV import', () => {
+  it('sends a multipart file with cookies and CSRF without setting JSON content type', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ totalRows: 1, validRows: 1, invalidRows: 0, rows: [] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const csvFile = new File(['matricula' + String.fromCharCode(10) + '12345'], 'students.csv', { type: 'text/csv' })
+
+    await classroomApi.previewCsv('class-1', csvFile)
+
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('/import/preview'))!
+    const request = call[1] as RequestInit
+    expect(request.credentials).toBe('include')
+    expect(new Headers(request.headers).get('X-CSRF-TOKEN')).toBeTruthy()
+    expect(new Headers(request.headers).get('Content-Type')).toBeNull()
+    expect(request.body).toBeInstanceOf(FormData)
+  })
+})

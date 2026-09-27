@@ -34,6 +34,8 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ClassroomService>();
 builder.Services.AddScoped<StudentManagementService>();
 builder.Services.AddScoped<TemporaryStudentAccessCodeService>();
+builder.Services.AddScoped<CsvStudentParser>();
+builder.Services.AddScoped<StudentCsvImportService>();
 builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<ModuleTransferService>();
 builder.Services.AddScoped<PrerequisiteService>();

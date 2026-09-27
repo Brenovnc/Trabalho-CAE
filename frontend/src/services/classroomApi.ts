@@ -1,9 +1,18 @@
-﻿import { requestApi } from './authApi'
+﻿import { requestApi, requestFormApi } from './authApi'
 
 export type ClassroomSummary = { id: string; name: string; code: string; status: string; studentCount: number; moduleCount: number; createdAtUtc: string; updatedAtUtc: string }
 export type ClassroomDetails = { id: string; name: string; code: string; status: string; createdAtUtc: string; updatedAtUtc: string; modules: { id: string; title: string; subject: string; version: number; status: string; assignedAtUtc: string }[]; studentCount: number }
 export type Student = { id: string; enrollmentNumber: string; name: string | null; isActive: boolean; isActivated: boolean; createdAtUtc: string }
 export type OneTimeCredentials = { studentId: string; enrollmentNumber: string; name: string | null; temporaryAccessCode: string; expiresAtUtc: string }
+export type StudentCsvPreviewRow = { lineNumber: number; enrollmentNumber: string; name: string | null; isValid: boolean; errors: string[] }
+export type StudentCsvPreview = { totalRows: number; validRows: number; invalidRows: number; rows: StudentCsvPreviewRow[] }
+export type StudentCsvImportResult = { createdCount: number; skippedRows: StudentCsvPreviewRow[]; credentialsCsv: string }
+
+function csvUpload(classroomId: string, operation: 'preview' | 'confirm', file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return requestFormApi<StudentCsvPreview | StudentCsvImportResult>(`/api/classrooms/${classroomId}/students/import/${operation}`, form)
+}
 
 export const classroomApi = {
   list: () => requestApi<ClassroomSummary[]>('/api/classrooms'),
@@ -17,4 +26,7 @@ export const classroomApi = {
   createStudent: (id: string, enrollmentNumber: string, name: string) => requestApi<OneTimeCredentials>(`/api/classrooms/${id}/students`, 'POST', { enrollmentNumber, name: name || null }),
   resetAccess: (classroomId: string, studentId: string) => requestApi<OneTimeCredentials>(`/api/classrooms/${classroomId}/students/${studentId}/reset-access`, 'POST'),
   deactivate: (classroomId: string, studentId: string) => requestApi<void>(`/api/classrooms/${classroomId}/students/${studentId}/deactivate`, 'POST'),
+
+  previewCsv: (classroomId: string, file: File) => csvUpload(classroomId, 'preview', file) as Promise<StudentCsvPreview>,
+  confirmCsv: (classroomId: string, file: File) => csvUpload(classroomId, 'confirm', file) as Promise<StudentCsvImportResult>,
 }
