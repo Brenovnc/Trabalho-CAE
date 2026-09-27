@@ -9,6 +9,7 @@ public sealed class ActivityAttempt
     public Guid StudentId { get; set; }
     public Guid ConceptId { get; set; }
     public Guid StudySessionId { get; set; }
+    public Guid? PresentationId { get; set; }
     public ActivityType ActivityType { get; set; }
     public Guid? RecognitionActivityId { get; set; }
     public Guid? FillBlankActivityId { get; set; }
@@ -27,6 +28,7 @@ public sealed class ActivityAttempt
     public Student Student { get; set; } = null!;
     public Concept Concept { get; set; } = null!;
     public StudySession StudySession { get; set; } = null!;
+    public SessionActivityPresentation? Presentation { get; set; }
     public RecognitionActivity? RecognitionActivity { get; set; }
     public FillBlankActivity? FillBlankActivity { get; set; }
     public OrderingActivity? OrderingActivity { get; set; }

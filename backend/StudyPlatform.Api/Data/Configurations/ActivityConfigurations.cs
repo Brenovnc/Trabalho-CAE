@@ -114,6 +114,7 @@ public sealed class ActivityAttemptConfiguration : IEntityTypeConfiguration<Acti
         builder.Property(x => x.ActivitySnapshotJson).HasColumnType("jsonb").IsRequired();
         builder.HasIndex(x => new { x.StudentId, x.ConceptId, x.CreatedAtUtc });
         builder.HasIndex(x => new { x.StudySessionId, x.CreatedAtUtc });
+        builder.HasIndex(x => x.PresentationId).IsUnique();
 
         builder.HasOne(x => x.RecognitionActivity)
             .WithMany(x => x.Attempts)
@@ -127,5 +128,6 @@ public sealed class ActivityAttemptConfiguration : IEntityTypeConfiguration<Acti
             .WithMany(x => x.Attempts)
             .HasForeignKey(x => x.OrderingActivityId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(x => x.Presentation).WithMany(x => x.Attempts).HasForeignKey(x => x.PresentationId).OnDelete(DeleteBehavior.Restrict);
     }
 }

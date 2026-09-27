@@ -176,3 +176,20 @@ Exemplo:
 O preview não grava dados nem gera códigos. A confirmação reenvia e revalida o mesmo arquivo; linhas inválidas, duplicadas no arquivo ou já cadastradas são ignoradas, enquanto as demais podem ser importadas. O limite é de 2.000 linhas de dados. Após a confirmação, o navegador baixa imediatamente matricula,nome,codigo_temporario apenas para alunos criados. Códigos não são recuperáveis depois; em caso de perda, redefina o acesso do aluno.
 
 Endpoints do fluxo: POST /api/classrooms/{classroomId}/students/import/preview e POST /api/classrooms/{classroomId}/students/import/confirm. Ambos exigem sessão de professor e token CSRF.
+## Motor pedagógico e FSRS (Etapa 9)
+
+O backend cria `StudentConceptState` sob demanda; conceitos sem registro são tratados como `NEW`. A progressão define como estudar (`NEW → EXPOSURE → RECOGNITION → GUIDED_RECALL → FREE_RECALL → MASTERED`), enquanto FSRS define quando revisar. Conceitos ativos só podem ser introduzidos quando o módulo está publicado, associado à turma ativa do aluno e todos os pré-requisitos estão `MASTERED`.
+
+A integração usa `Fsrs.Sharp` 2.0.0 (FSRS-6, licença MIT) exclusivamente dentro de `FsrsService`. O estado de memória usa dificuldade, estabilidade, vencimento, última revisão, elapsed/scheduled days, repetições, lapses e estado/step FSRS serializado na coluna existente `FsrsState`. A sequência padrão da biblioteca mantém intervalos curtos de aprendizagem; fuzzing está desativado para scheduling reproduzível. `MASTERED` continua recebendo revisões; acerto preserva o estado e erro regressa para `FREE_RECALL`.
+
+Para chegar a `MASTERED`, o primeiro acerto de `FREE_RECALL` inicia a sequência válida e agenda revisão; o segundo só conta em outra sessão quando o vencimento anterior já chegou. Erro em `FREE_RECALL` regressa para `GUIDED_RECALL` e zera contador e sessão da sequência válida, mantendo os horários históricos de sucesso. Rating interno: erro → `AGAIN`; acerto com tentativa extra ou ao menos duas pistas → `HARD`; acerto limpo em até 5 segundos → `EASY`; os demais acertos → `GOOD`. Tempo sozinho não transforma acerto em erro nem em `HARD`.
+
+Execute os testes do motor com `dotnet test backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj`. Os testes de persistência usam exclusivamente o banco `trabalho_cae_learning_test` e conferem o nome antes da limpeza.
+
+## Sessões e correção de atividades (Etapa 10)
+
+O backend disponibiliza sessões apenas para alunos ativos e autenticados, com turma ativa e módulo publicado associado à turma. `POST /api/student/modules/{moduleId}/sessions` inicia ou retoma a única sessão ativa do aluno para aquele módulo. `GET /api/student/sessions/{sessionId}` e `/next` recuperam a apresentação atual; `POST /api/student/sessions/{sessionId}/activities/{presentationId}/reveal` revela a próxima palavra-chave/pista; `POST /api/student/sessions/{sessionId}/answer` corrige e registra uma resposta; `POST /api/student/sessions/{sessionId}/abandon` abandona sem apagar tentativas.
+
+A seleção é incremental: cada resposta persiste tentativa e progressão antes de selecionar a seguinte. `TotalActivities` conta apresentações entregues até aquele momento (incluindo a atual); a sessão termina ao atingir 10 ou quando não há outra atividade compatível e ainda não usada. O serviço prioriza revisões vencidas, erros recentes (janela de 14 dias), conceitos em andamento e conceitos novos elegíveis; desempates usam estado/tipo principal e IDs estáveis. Não há repetição de um mesmo cartão na sessão.
+
+Uma apresentação persistida guarda o snapshot privado usado para correção e a API projeta somente os campos públicos. A tentativa aponta para essa apresentação por uma referência única; locks transacionais do PostgreSQL serializam respostas concorrentes. Respostas repetidas recebem conflito HTTP 409 e não avançam o estado novamente. Todas as mutações exigem o token CSRF existente (`X-CSRF-TOKEN`). Os testes usam exclusivamente `trabalho_cae_learning_test`.

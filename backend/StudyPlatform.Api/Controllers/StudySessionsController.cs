@@ -1,0 +1,43 @@
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using StudyPlatform.Api.DTOs.Auth;
+using StudyPlatform.Api.DTOs.Learning;
+using StudyPlatform.Api.Services.Learning;
+
+namespace StudyPlatform.Api.Controllers;
+
+[ApiController]
+[Authorize(Policy = AuthPolicies.Student)]
+[Route("api/student")]
+public sealed class StudySessionsController(StudySessionService sessions) : ControllerBase
+{
+    [HttpPost("modules/{moduleId:guid}/sessions")]
+    public async Task<ActionResult<StartStudySessionResponse>> Start(Guid moduleId, CancellationToken ct) =>
+        Ok(await sessions.StartAsync(StudentId, moduleId, ct));
+
+    [HttpGet("sessions/{sessionId:guid}")]
+    public async Task<ActionResult<StudySessionResponse>> Get(Guid sessionId, CancellationToken ct) =>
+        Ok(await sessions.GetAsync(StudentId, sessionId, ct));
+
+    [HttpGet("sessions/{sessionId:guid}/next")]
+    public async Task<ActionResult<StudySessionResponse>> Next(Guid sessionId, CancellationToken ct) =>
+        Ok(await sessions.GetNextAsync(StudentId, sessionId, ct));
+
+    [HttpPost("sessions/{sessionId:guid}/activities/{presentationId:guid}/reveal")]
+    public async Task<ActionResult<RevealHintResponse>> Reveal(Guid sessionId, Guid presentationId, CancellationToken ct) =>
+        Ok(await sessions.RevealNextHintAsync(StudentId, sessionId, presentationId, ct));
+
+    [HttpPost("sessions/{sessionId:guid}/answer")]
+    public async Task<ActionResult<ActivityAnswerResponse>> Answer(Guid sessionId, SubmitActivityAnswerRequest request, CancellationToken ct) =>
+        Ok(await sessions.SubmitAsync(StudentId, sessionId, request, ct));
+
+    [HttpPost("sessions/{sessionId:guid}/abandon")]
+    public async Task<IActionResult> Abandon(Guid sessionId, CancellationToken ct)
+    {
+        await sessions.AbandonAsync(StudentId, sessionId, ct);
+        return NoContent();
+    }
+
+    private Guid StudentId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+}

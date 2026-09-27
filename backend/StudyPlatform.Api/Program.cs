@@ -39,6 +39,14 @@ builder.Services.AddScoped<StudentCsvImportService>();
 builder.Services.AddScoped<ModuleService>();
 builder.Services.AddScoped<ModuleTransferService>();
 builder.Services.AddScoped<PrerequisiteService>();
+builder.Services.AddScoped<FsrsService>();
+builder.Services.AddScoped<PerformanceRatingService>();
+builder.Services.AddScoped<LearningProgressionService>();
+builder.Services.AddScoped<ConceptEligibilityService>();
+builder.Services.AddScoped<ActivityCompatibilityService>();
+// Stage 10 session services
+builder.Services.AddScoped<ActivitySelectionService>();
+builder.Services.AddScoped<StudySessionService>();
 builder.Services.AddScoped<IPasswordHasher<Teacher>, PasswordHasher<Teacher>>();
 builder.Services.AddScoped<IPasswordHasher<Student>, PasswordHasher<Student>>();
 builder.Services.AddScoped<ApiCookieAuthenticationEvents>();

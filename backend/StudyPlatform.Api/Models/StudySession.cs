@@ -17,5 +17,6 @@ public sealed class StudySession
     public Student Student { get; set; } = null!;
     public Module Module { get; set; } = null!;
     public ICollection<ActivityAttempt> Attempts { get; set; } = new List<ActivityAttempt>();
+    public ICollection<SessionActivityPresentation> Presentations { get; set; } = new List<SessionActivityPresentation>();
     public ICollection<StudentConceptState> LastFreeRecallSuccessStates { get; set; } = new List<StudentConceptState>();
 }

@@ -25,6 +25,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<StudentConceptState> StudentConceptStates => Set<StudentConceptState>();
     public DbSet<StudySession> StudySessions => Set<StudySession>();
     public DbSet<ActivityAttempt> ActivityAttempts => Set<ActivityAttempt>();
+    public DbSet<SessionActivityPresentation> SessionActivityPresentations => Set<SessionActivityPresentation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
