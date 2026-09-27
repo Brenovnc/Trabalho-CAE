@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "module": {
+    "externalId": "module-1",
+    "title": "Fundamentos de redes",
+    "description": "Exemplo mínimo de intercâmbio.",
+    "subject": "Redes de Computadores",
+    "version": 1,
+    "concepts": [
+      {
+        "externalId": "ip",
+        "name": "IP",
+        "definition": "Protocolo de endereçamento lógico.",
+        "isActive": true,
+        "keywords": [
+          { "value": "endereçamento lógico", "isActive": true }
+        ],
+        "clues": [
+          { "text": "Está relacionado à camada de rede.", "isActive": true }
+        ],
+        "prerequisites": [],
+        "trueFalseActivities": [],
+        "fillBlankActivities": [],
+        "orderingActivities": []
+      }
+    ]
+  }
+}

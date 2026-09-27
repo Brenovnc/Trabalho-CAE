@@ -1,11 +1,29 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using StudyPlatform.Api.Data;
+using StudyPlatform.Api.DTOs.Auth;
 using StudyPlatform.Api.DTOs.Common;
+using StudyPlatform.Api.Domain.Enums;
 
 namespace StudyPlatform.Api.Services.Auth;
 
-public sealed class ApiCookieAuthenticationEvents : CookieAuthenticationEvents
+public sealed class ApiCookieAuthenticationEvents(ApplicationDbContext dbContext) : CookieAuthenticationEvents
 {
+    public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
+    {
+        if (context.Principal?.FindFirstValue(ClaimTypes.Role) != AuthRoles.Student) return;
+        var studentId = context.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isActive = Guid.TryParse(studentId, out var id) && await dbContext.Students.AsNoTracking()
+            .AnyAsync(student => student.Id == id && student.IsActive && student.IsActivated &&
+                student.Classroom.Status == ClassroomStatus.Active);
+        if (isActive) return;
+
+        context.RejectPrincipal();
+        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    }
+
     public override Task RedirectToLogin(RedirectContext<CookieAuthenticationOptions> context) =>
         WriteErrorAsync(context.HttpContext, StatusCodes.Status401Unauthorized,
             "unauthenticated", "É necessário autenticar-se.");

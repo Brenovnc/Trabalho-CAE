@@ -1,6 +1,7 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AuthForm } from './pages/auth/AuthForm'
 import { ModulesPage } from './pages/modules/ModulesPage'
+import { ClassroomsPage } from './pages/classrooms/ClassroomsPage'
 import { ApiRequestError, getCurrentUser, logout, prepareCsrfToken, submitAuth } from './services/authApi'
 import type { AuthenticatedUser, AuthMode } from './types/auth'
 import styles from './App.module.css'
@@ -8,6 +9,7 @@ import styles from './App.module.css'
 function App() {
   const [user, setUser] = useState<AuthenticatedUser | null>(null)
   const [ready, setReady] = useState(false)
+  const [teacherArea, setTeacherArea] = useState<'modules' | 'classrooms'>('modules')
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
@@ -45,7 +47,9 @@ function App() {
     }
   }
 
-  if (ready && user?.role === 'TEACHER') return <ModulesPage onLogout={() => void handleLogout()} />
+  if (ready && user?.role === 'TEACHER') return teacherArea === 'modules'
+    ? <ModulesPage onLogout={() => void handleLogout()} onClassrooms={() => setTeacherArea('classrooms')} />
+    : <ClassroomsPage onLogout={() => void handleLogout()} onModules={() => setTeacherArea('modules')} />
 
   return (
     <main className={styles.page}>

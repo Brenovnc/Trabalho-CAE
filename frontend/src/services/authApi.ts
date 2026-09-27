@@ -39,6 +39,19 @@ async function post<T>(path: string, body?: unknown): Promise<T> {
   return parseResponse<T>(await fetch(`${apiBaseUrl}${path}`, request))
 }
 
+export async function requestApi<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  const headers = new Headers()
+  const init: RequestInit = { method, credentials: 'include', headers }
+  if (method !== 'GET' && method !== 'HEAD') {
+    if (!csrfToken) await prepareCsrfToken()
+    headers.set('X-CSRF-TOKEN', csrfToken!)
+  }
+  if (body !== undefined) {
+    headers.set('Content-Type', 'application/json')
+    init.body = JSON.stringify(body)
+  }
+  return parseResponse<T>(await fetch(`${apiBaseUrl}${path}`, init))
+}
 export function getCurrentUser(): Promise<AuthenticatedUser> {
   return fetch(`${apiBaseUrl}/api/auth/me`, { credentials: 'include' })
     .then(response => parseResponse<AuthenticatedUser>(response))

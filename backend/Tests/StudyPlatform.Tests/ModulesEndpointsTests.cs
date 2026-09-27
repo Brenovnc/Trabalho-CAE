@@ -321,6 +321,203 @@ public sealed class ModulesEndpointsTests : IAsyncLifetime
         await db.SaveChangesAsync();
         return session.Id;
     }
+
+    [Fact]
+    public async Task ExportThenImportPreservesContentAndCreatesNewDraftOwnedByCurrentTeacher()
+    {
+        var teacher = await CreateTeacherAsync(client, "roundtrip");
+        var source = await CreateModuleAsync(client, "Transfer module");
+        var ip = await SaveConceptAsync(source.Id, "IP", []);
+        var dns = await SaveConceptAsync(source.Id, "DNS", [ip.Id]);
+
+        var dnsInput = System.Text.Json.Nodes.JsonNode.Parse(System.Text.Json.JsonSerializer.Serialize(ConceptPayload("DNS", [ip.Id])))!;
+        dnsInput["recognitionActivities"]!.AsArray().Add(System.Text.Json.Nodes.JsonNode.Parse(
+            """{"statement":"Additional statement","isCorrect":true,"explanation":"Additional explanation"}"""));
+        dnsInput["orderingActivities"]!.AsArray().Add(System.Text.Json.Nodes.JsonNode.Parse(
+            """{"instruction":"Order steps","items":["First","Second"]}"""));
+        await SendAsync<ConceptDetailsResponse>(client, HttpMethod.Put,
+            $"/api/modules/{source.Id}/concepts/{dns.Id}", dnsInput);
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var inactive = await db.RecognitionActivities.Where(item => item.ConceptId == dns.Id).OrderBy(item => item.CreatedAtUtc).FirstAsync();
+            inactive.IsActive = false;
+            await db.SaveChangesAsync();
+        }
+        await SeedAttemptAsync(teacher.Id, source.Id, dns.Id, dns.RecognitionActivities[0].Id);
+        await SendAsync<ModuleDetailsResponse>(client, HttpMethod.Post, $"/api/modules/{source.Id}/publish", null);
+        await SendAsync(client, HttpMethod.Post, $"/api/modules/{source.Id}/concepts/{dns.Id}/deactivate", null);
+        await SendAsync(client, HttpMethod.Post, $"/api/modules/{source.Id}/concepts/{ip.Id}/deactivate", null);
+
+        using var exported = await client.GetAsync($"/api/modules/{source.Id}/export");
+        Assert.Equal(HttpStatusCode.OK, exported.StatusCode);
+        Assert.StartsWith("application/json", exported.Content.Headers.ContentType!.MediaType);
+        Assert.Contains("transfer-module.json", exported.Content.Headers.ContentDisposition!.FileName);
+        var json = await exported.Content.ReadAsStringAsync();
+        using var parsed = System.Text.Json.JsonDocument.Parse(json);
+        Assert.Equal(1, parsed.RootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.DoesNotContain(source.Id.ToString(), json);
+        Assert.DoesNotContain("teacherId", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("passwordHash", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("activityAttempts", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"isActive\": false", json);
+        Assert.Contains("\"orderingActivities\"", json);
+
+        using var importedResponse = await SendRawAsync(client, "/api/modules/import", json);
+        Assert.Equal(HttpStatusCode.Created, importedResponse.StatusCode);
+        var imported = await importedResponse.Content.ReadFromJsonAsync<ModuleDetailsResponse>();
+        Assert.NotNull(imported);
+        Assert.Equal(ModuleStatus.Draft, imported!.Status);
+
+        Assert.NotEqual(source.Id, imported.Id);
+        var copiedIp = Assert.Single(imported.Concepts, item => item.Name == "IP");
+        var copiedDns = Assert.Single(imported.Concepts, item => item.Name == "DNS");
+        Assert.NotEqual(ip.Id, copiedIp.Id);
+        Assert.NotEqual(dns.Id, copiedDns.Id);
+        Assert.Equal([copiedIp.Id], copiedDns.PrerequisiteIds);
+        Assert.Contains(copiedDns.RecognitionActivities, item => !item.IsActive);
+        Assert.Single(copiedDns.OrderingActivities);
+        Assert.Equal(6, copiedDns.FillBlankActivities.Count);
+        Assert.Single(copiedDns.Keywords);
+
+
+        await using var verifyScope = factory.Services.CreateAsyncScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var storedCopy = await verifyDb.Modules.SingleAsync(item => item.Id == imported.Id);
+        Assert.Equal(teacher.Id, storedCopy.TeacherId);
+        Assert.Equal(ModuleStatus.Draft, storedCopy.Status);
+        Assert.Equal(1, await verifyDb.ActivityAttempts.CountAsync(item => item.ConceptId == dns.Id));
+        Assert.Equal(3, await verifyDb.ConceptClues.CountAsync(item => item.ConceptId == copiedDns.Id));
+        Assert.Equal(3, await verifyDb.ConceptClues.CountAsync(item => item.ConceptId == copiedDns.Id && !item.IsActive));
+    }
+
+    [Fact]
+    public async Task InvalidJsonSchemaAndContentAreRejectedAtomically()
+    {
+        await CreateTeacherAsync(client, "invalid-import");
+        var cases = new (string Json, string ExpectedCode)[]
+        {
+            ("{", "invalid_json"),
+            ("""{"schemaVersion":2,"module":{"externalId":"module","title":"Imported","description":null,"subject":"Networking","version":1,"concepts":[]}}""", "unsupported_schema_version"),
+            (ExchangeJson(ExchangeConcept("same", []), ExchangeConcept("same", [])), "import_validation_failed"),
+            (ExchangeJson([ExchangeConcept("module", [])]), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("dns", ["missing"])), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("dns", ["dns"])), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("a", ["b"]), ExchangeConcept("b", ["a"])), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("a", ["b"]), ExchangeConcept("b", ["c"]), ExchangeConcept("c", ["a"])), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("bad-fill", [], fillText: "Missing marker")), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("no-distractors", [], distractors: [])), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("bad-order", [], orderingItems: ["Only one"])), "import_validation_failed"),
+            (ExchangeJson(ExchangeConcept("bad-activity", [], statement: "")), "import_validation_failed"),
+            (ExchangeJson([ExchangeConcept("forged-owner", [])], includeTeacherId: true), "invalid_json"),
+        };
+
+        foreach (var (json, expectedCode) in cases)
+        {
+            using var response = await SendRawAsync(client, "/api/modules/import", json);
+            Assert.True(response.StatusCode == HttpStatusCode.BadRequest, $"Expected {expectedCode}, got {(int)response.StatusCode} for {json}: {await response.Content.ReadAsStringAsync()}");
+            Assert.Contains(expectedCode, await response.Content.ReadAsStringAsync());
+        }
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Empty(await db.Modules.ToListAsync());
+        Assert.Empty(await db.Concepts.ToListAsync());
+        Assert.Empty(await db.ConceptPrerequisites.ToListAsync());
+        Assert.Empty(await db.ConceptKeywords.ToListAsync());
+        Assert.Empty(await db.ConceptClues.ToListAsync());
+        Assert.Empty(await db.RecognitionActivities.ToListAsync());
+        Assert.Empty(await db.FillBlankActivities.ToListAsync());
+        Assert.Empty(await db.FillBlankAnswers.ToListAsync());
+        Assert.Empty(await db.FillBlankDistractors.ToListAsync());
+        Assert.Empty(await db.OrderingActivities.ToListAsync());
+        Assert.Empty(await db.OrderingActivityItems.ToListAsync());
+    }
+
+    [Fact]
+    public async Task TransferEndpointsRequireTeacherAndEnforceModuleOwnership()
+    {
+        var anonymous = CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/modules/00000000-0000-0000-0000-000000000000/export")).StatusCode);
+        using (var anonymousImport = await SendRawAsync(anonymous, "/api/modules/import", ExchangeJson(ExchangeConcept("anonymous", []))))
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymousImport.StatusCode);
+        anonymous.Dispose();
+        var owner = await CreateTeacherAsync(client, "export-owner");
+        var module = await CreateModuleAsync(client, "Owned");
+        var foreignClient = CreateClient();
+        var foreignTeacher = await CreateTeacherAsync(foreignClient, "export-other");
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await foreignClient.GetAsync($"/api/modules/{module.Id}/export")).StatusCode);
+        using (var importedByForeign = await SendRawAsync(foreignClient, "/api/modules/import", ExchangeJson(ExchangeConcept("x", []))))
+        {
+            Assert.Equal(HttpStatusCode.Created, importedByForeign.StatusCode);
+            var importedForeignModule = await importedByForeign.Content.ReadFromJsonAsync<ModuleDetailsResponse>();
+            await using var ownerScope = factory.Services.CreateAsyncScope();
+            var ownerDb = ownerScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Assert.Equal(foreignTeacher.Id, await ownerDb.Modules.Where(item => item.Id == importedForeignModule!.Id).Select(item => item.TeacherId).SingleAsync());
+        }
+
+        var studentClient = CreateClient();
+        await SeedAndLoginStudentAsync(studentClient, owner.Id);
+        using var studentExport = await studentClient.GetAsync($"/api/modules/{module.Id}/export");
+        Assert.Equal(HttpStatusCode.Forbidden, studentExport.StatusCode);
+        using var studentImport = await SendRawAsync(studentClient, "/api/modules/import", ExchangeJson(ExchangeConcept("student", [])));
+        Assert.Equal(HttpStatusCode.Forbidden, studentImport.StatusCode);
+        foreignClient.Dispose();
+        studentClient.Dispose();
+    }
+
+    private async Task<HttpResponseMessage> SendRawAsync(HttpClient http, string path, string json)
+    {
+        var csrf = await http.GetFromJsonAsync<CsrfTokenResponse>("/api/auth/csrf");
+        using var request = new HttpRequestMessage(HttpMethod.Post, path);
+        request.Headers.Add("X-CSRF-TOKEN", csrf!.Token);
+        request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        return await http.SendAsync(request);
+    }
+
+    private static string ExchangeJson(params object[] concepts) => ExchangeJson(concepts, false);
+
+    private static string ExchangeJson(object[] concepts, bool includeTeacherId)
+    {
+        var module = new Dictionary<string, object?>
+        {
+            ["externalId"] = "module", ["title"] = "Imported", ["description"] = null,
+            ["subject"] = "Networking", ["version"] = 3, ["concepts"] = concepts,
+        };
+        var root = new Dictionary<string, object?> { ["schemaVersion"] = 1, ["module"] = module };
+        if (includeTeacherId) module["teacherId"] = Guid.NewGuid();
+        return System.Text.Json.JsonSerializer.Serialize(root);
+    }
+
+    private static object ExchangeConcept(
+        string id,
+        string[] prerequisites,
+        string fillText = "{{1}} supports networking",
+        string[]? orderingItems = null,
+        string statement = "A networking statement",
+        string[]? distractors = null)
+    {
+        object[] ordering = orderingItems is null ? [] :
+        [
+            new { instruction = "Order the steps", items = orderingItems, isActive = true },
+        ];
+        return new
+        {
+            externalId = id, name = id, definition = $"{id} definition", isActive = true,
+            keywords = new[] { new { value = id, isActive = true } },
+            clues = new[] { new { text = $"Clue for {id}", isActive = true } },
+            prerequisites,
+            trueFalseActivities = new[] { new { statement, isCorrect = true, explanation = "Explanation", isActive = true } },
+            fillBlankActivities = new[] { new
+            {
+                text = fillText, answers = new[] { new { slotNumber = 1, correctText = id } },
+                distractors = distractors ?? ["other"], isActive = true,
+            } },
+            orderingActivities = ordering,
+        };
+    }
 }
 
 

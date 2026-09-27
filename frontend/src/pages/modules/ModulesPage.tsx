@@ -1,10 +1,10 @@
-﻿import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { moduleApi } from '../../services/moduleApi'
 import type { Concept, ConceptInput, ModuleDetails, ModuleInput, ModuleSummary, PublicationValidation } from '../../types/modules'
 import { moduleStatusLabel } from '../../types/modules'
 import styles from './ModulesPage.module.css'
 
-type Props = { onLogout: () => void }
+type Props = { onLogout: () => void; onClassrooms: () => void }
 type ActivityDraft = { id?: string; statement: string; isCorrect: boolean; explanation: string }
 type FillDraft = { id?: string; text: string; answers: string; distractors: string }
 type OrderDraft = { id?: string; instruction: string; items: string }
@@ -55,7 +55,7 @@ function toConceptInput(draft: ConceptDraft): ConceptInput {
   }
 }
 
-export function ModulesPage({ onLogout }: Props) {
+export function ModulesPage({ onLogout, onClassrooms }: Props) {
   const [modules, setModules] = useState<ModuleSummary[]>([])
   const [selected, setSelected] = useState<ModuleDetails | null>(null)
   const [moduleDraft, setModuleDraft] = useState<ModuleInput>(blankModule)
@@ -143,6 +143,34 @@ export function ModulesPage({ onLogout }: Props) {
     if (!selected) return
     await run(() => moduleApi.archive(selected.id), 'Módulo arquivado.')
   }
+  async function exportModule(id: string) {
+    try {
+      setBusy(true); setError(''); setNotice('')
+      const file = await moduleApi.exportJson(id)
+      const url = URL.createObjectURL(file.blob)
+      const link = document.createElement('a')
+      link.href = url; link.download = file.fileName; link.click()
+      URL.revokeObjectURL(url)
+      setNotice('JSON exportado.')
+    } catch (cause) { setError(messageOf(cause)) } finally { setBusy(false) }
+  }
+
+  async function importFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+    event.currentTarget.value = ''
+    if (!file) return
+    if (file.size > 1_048_576) { setError('O arquivo JSON pode ter no máximo 1 MiB.'); return }
+    try {
+      setBusy(true); setError(''); setNotice('')
+      const imported = await moduleApi.importJson(await file.text())
+      const result = await moduleApi.validate(imported.id)
+      setSelected(imported)
+      setModuleDraft({ title: imported.title, description: imported.description ?? '', subject: imported.subject, version: imported.version })
+      setValidation(result); setConceptDraft(blankConcept())
+      await refreshList()
+      setNotice('Módulo importado como rascunho.')
+    } catch (cause) { setError(messageOf(cause)) } finally { setBusy(false) }
+  }
 
   const activeConcepts = selected?.concepts.filter(concept => concept.isActive) ?? []
   const issueConcept = (id: string | null) => id ? selected?.concepts.find(concept => concept.id === id)?.name ?? 'Conceito' : 'Módulo'
@@ -151,7 +179,7 @@ export function ModulesPage({ onLogout }: Props) {
     <main className={styles.page}>
       <header className={styles.header}>
         <div><p className={styles.eyebrow}>Área do professor</p><h1>Gestão de módulos</h1></div>
-        <button className={styles.secondary} type="button" onClick={onLogout}>Sair</button>
+        <div><button className={styles.secondary} type="button" onClick={onClassrooms}>Turmas e alunos</button><button className={styles.secondary} type="button" onClick={onLogout}>Sair</button></div>
       </header>
       {(error || notice) && <p className={error ? styles.error : styles.notice} role="status">{error || notice}</p>}
       {busy && <p className={styles.muted} role="status">Salvando…</p>}
@@ -164,13 +192,15 @@ export function ModulesPage({ onLogout }: Props) {
           </section>
           <section className={styles.panel}>
             <h2>Meus módulos</h2>
+            <label className={styles.importControl}>Importar módulo JSON<input type="file" accept=".json,application/json" disabled={busy} onChange={(event) => void importFile(event)} /></label>
             {modules.length === 0 ? <p className={styles.muted}>Você ainda não criou módulos.</p> : (
               <ul className={styles.moduleList}>{modules.map(module => (
-                <li key={module.id}>
+                <li key={module.id} className={styles.moduleRow}>
                   <button type="button" className={styles.moduleLink} onClick={() => void openModule(module.id)}>
                     <span><strong>{module.title}</strong><small>{module.subject} · {module.activeConceptCount} conceitos ativos</small></span>
                     <span className={styles.status}>{moduleStatusLabel(module.status)}</span>
                   </button>
+                  <button type="button" className={styles.secondary} disabled={busy} onClick={() => void exportModule(module.id)}>Exportar JSON</button>
                 </li>
               ))}</ul>
             )}
@@ -181,6 +211,7 @@ export function ModulesPage({ onLogout }: Props) {
           <button type="button" className={styles.back} onClick={() => { setSelected(null); setValidation(null); setModuleDraft(blankModule); setConceptDraft(blankConcept()) }}>← Meus módulos</button>
           <section className={styles.panel}>
             <div className={styles.titleRow}><div><p className={styles.eyebrow}>{moduleStatusLabel(selected.status)}</p><h2>{selected.title}</h2></div><div className={styles.actions}>
+              <button className={styles.secondary} disabled={busy} type="button" onClick={() => void exportModule(selected.id)}>Exportar JSON</button>
               <button className={styles.secondary} disabled={busy} type="button" onClick={() => void duplicateModule()}>Duplicar módulo</button>
               {selected.status !== 2 && selected.status !== 'Archived' && <button className={styles.danger} disabled={busy} type="button" onClick={() => void archive()}>Arquivar</button>}
             </div></div>
@@ -288,4 +319,3 @@ function ConceptEditor({ module, value, onChange, onSubmit, onDuplicate, onDeact
 }
 
 function messageOf(cause: unknown) { return cause instanceof Error ? cause.message : 'Não foi possível concluir a operação.' }
-

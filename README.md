@@ -149,3 +149,15 @@ Cada tentativa exige um snapshot JSONB do conteúdo apresentado, para preservar 
 A Etapa 5 usa rotas aninhadas sob `/api/modules`. Conceitos e todas as suas keywords, pistas, pré-requisitos e atividades são criados/editados como um único recurso agregado em `POST/PUT /api/modules/{moduleId}/concepts/{conceptId}`. Isso mantém a gravação coerente e dá ao frontend um contrato previsível. Atividades omitidas em uma edição são desativadas para preservar tentativas; keywords e pistas são atualizadas pela lista e posição, respectivamente.
 
 Rotas adicionais: `GET/POST /api/modules`, `GET/PUT /api/modules/{id}`, `POST /api/modules/{id}/duplicate|publish|archive`, `GET /api/modules/{id}/publication-validation`, `GET /api/modules/{moduleId}/concepts`, `GET /api/modules/{moduleId}/concepts/{conceptId}`, `POST /api/modules/{moduleId}/concepts/{conceptId}/duplicate|deactivate`.
+
+## Intercâmbio de módulos JSON
+
+O formato de intercâmbio atual usa `schemaVersion: 1`; um exemplo estrutural está em `docs/module-exchange-v1.example.json`. Ele contém um objeto `module` e conceitos identificados por `externalId`; pré-requisitos referenciam esses IDs externos. IDs internos, proprietário, turmas e dados de aprendizagem não fazem parte do arquivo.
+
+O backend inclui conteúdo e atividades ativos ou inativos na exportação para preservar o material. A importação aceita JSON (`POST /api/modules/import`, com `Content-Type: application/json`) e a exportação baixa JSON em `GET /api/modules/{id}/export`. O arquivo deve ter até 1 MiB e propriedades fora do schema são rejeitadas. Versões de schema desconhecidas são rejeitadas. Toda importação pertence ao professor autenticado e começa em `DRAFT`; o conteúdo pode precisar de ajustes antes da publicação, que usa a validação da Etapa 5.
+
+## Turmas e alunos
+
+Na Etapa 7, a gestão usa as rotas `/api/classrooms` e recursos aninhados `/api/classrooms/{id}/modules` e `/api/classrooms/{id}/students`. Apenas professores podem usá-las. O código da turma é normalizado para maiúsculas e aceita de 3 a 32 caracteres alfanuméricos, com hífens somente entre grupos (por exemplo, `TURMA-A`).
+
+O cadastro e a redefinição retornam o código temporário uma única vez. Ele possui seis caracteres do alfabeto `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, gerados por `RandomNumberGenerator`, e expira em sete dias. O banco conserva somente o hash produzido pelo `PasswordHasher<Student>`. Após reset, a senha anterior deixa de funcionar; a ativação da Etapa 4 consome o código novo.

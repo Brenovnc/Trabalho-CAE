@@ -1,9 +1,11 @@
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudyPlatform.Api.DTOs.Auth;
 using StudyPlatform.Api.DTOs.Concepts;
 using StudyPlatform.Api.DTOs.Modules;
+using StudyPlatform.Api.Exceptions;
 using StudyPlatform.Api.Services.Auth;
 using StudyPlatform.Api.Services.Modules;
 
@@ -12,7 +14,7 @@ namespace StudyPlatform.Api.Controllers;
 [ApiController]
 [Authorize(Policy = AuthPolicies.Teacher)]
 [Route("api/modules")]
-public sealed class ModulesController(ModuleService modules) : ControllerBase
+public sealed class ModulesController(ModuleService modules, ModuleTransferService transfer) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ModuleSummaryResponse>>> List(CancellationToken ct) =>
@@ -38,6 +40,32 @@ public sealed class ModulesController(ModuleService modules) : ControllerBase
     {
         var copy = await modules.DuplicateAsync(TeacherId, id, ct);
         return CreatedAtAction(nameof(Get), new { id = copy.Id }, copy);
+    }
+
+    [HttpGet("{id:guid}/export")]
+    public async Task<IActionResult> Export(Guid id, CancellationToken ct)
+    {
+        var file = await transfer.ExportAsync(TeacherId, id, ct);
+        return File(file.Content, "application/json; charset=utf-8", file.FileName);
+    }
+
+    [HttpPost("import")]
+    [Consumes("application/json")]
+    [RequestSizeLimit(ModuleTransferService.MaximumImportBytes)]
+    public async Task<ActionResult<ModuleDetailsResponse>> Import(CancellationToken ct)
+    {
+        if (!Request.HasJsonContentType())
+            throw new ApiException(StatusCodes.Status415UnsupportedMediaType, "unsupported_media_type", "Envie o módulo como application/json.");
+        if (Request.ContentLength > ModuleTransferService.MaximumImportBytes)
+            throw new ApiException(StatusCodes.Status413PayloadTooLarge, "import_too_large", "O JSON pode ter no máximo 1 MiB.");
+
+        using var reader = new StreamReader(Request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        var json = await reader.ReadToEndAsync(ct);
+        if (Encoding.UTF8.GetByteCount(json) > ModuleTransferService.MaximumImportBytes)
+            throw new ApiException(StatusCodes.Status413PayloadTooLarge, "import_too_large", "O JSON pode ter no máximo 1 MiB.");
+
+        var imported = await transfer.ImportAsync(TeacherId, json, ct);
+        return CreatedAtAction(nameof(Get), new { id = imported.Id }, imported);
     }
 
     [HttpGet("{id:guid}/publication-validation")]
@@ -94,4 +122,3 @@ public sealed class ModulesController(ModuleService modules) : ControllerBase
 
     private Guid TeacherId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }
-

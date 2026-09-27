@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using StudyPlatform.Api.Data;
 using StudyPlatform.Api.DTOs.Auth;
 using StudyPlatform.Api.Exceptions;
 using StudyPlatform.Api.Models;
+using StudyPlatform.Api.Domain.Enums;
 
 namespace StudyPlatform.Api.Services.Auth;
 
@@ -76,6 +77,7 @@ public sealed class AuthService(
             .Include(candidate => candidate.Classroom)
             .SingleOrDefaultAsync(candidate =>
                 candidate.Classroom.CodeNormalized == classroomCode &&
+                candidate.Classroom.Status == ClassroomStatus.Active &&
                 candidate.EnrollmentNumber == enrollmentNumber,
                 cancellationToken);
 
@@ -141,6 +143,7 @@ public sealed class AuthService(
         var student = await dbContext.Students
             .SingleOrDefaultAsync(candidate =>
                 candidate.Classroom.CodeNormalized == classroomCode &&
+                candidate.Classroom.Status == ClassroomStatus.Active &&
                 candidate.EnrollmentNumber == enrollmentNumber,
                 cancellationToken);
 

@@ -57,7 +57,7 @@ describe('authentication interface and API client', () => {
   })
 
   it('renders the basic module management screen', () => {
-    const markup = renderToStaticMarkup(createElement(ModulesPage, { onLogout: () => {} }))
+    const markup = renderToStaticMarkup(createElement(ModulesPage, { onLogout: () => {}, onClassrooms: () => {} }))
     expect(markup).toContain('Gestão de módulos')
     expect(markup).toContain('Novo módulo')
     expect(markup).toContain('Meus módulos')
@@ -76,5 +76,40 @@ describe('authentication interface and API client', () => {
     const mutation = fetchMock.mock.calls[1][1] as RequestInit
     expect(mutation.credentials).toBe('include')
     expect(new Headers(mutation.headers).get('X-CSRF-TOKEN')).toBe('module-csrf')
+  })
+
+  it('imports a module JSON with cookies and the CSRF token', async () => {
+    const imported = {
+      id: 'new-module', title: 'Imported', subject: 'Networking', description: null, version: 1,
+      status: 0, createdAtUtc: '', updatedAtUtc: '', concepts: [],
+    }
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ token: 'import-csrf' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(imported), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await moduleApi.importJson('{"schemaVersion":1}')
+
+    expect(result.id).toBe('new-module')
+    expect(fetchMock.mock.calls[1][0]).toContain('/api/modules/import')
+    const request = fetchMock.mock.calls[1][1] as RequestInit
+    expect(request.credentials).toBe('include')
+    expect(request.body).toBe('{"schemaVersion":1}')
+    expect(new Headers(request.headers).get('Content-Type')).toBe('application/json')
+    expect(new Headers(request.headers).get('X-CSRF-TOKEN')).toBe('import-csrf')
+  })
+
+  it('downloads the exported JSON with the server-provided safe file name', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response('{"schemaVersion":1}', {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Content-Disposition': 'attachment; filename="module.json"' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await moduleApi.exportJson('module-id')
+
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ credentials: 'include' })
+    expect(result.fileName).toBe('module.json')
+    expect(await result.blob.text()).toBe('{"schemaVersion":1}')
   })
 })

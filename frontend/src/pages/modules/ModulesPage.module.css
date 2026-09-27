@@ -39,3 +39,8 @@ legend { padding:0 .35rem; color:#dce1f0; font-weight:650; }
 .activity { display:grid; gap:.65rem; margin:.7rem 0 1rem; padding:.85rem; border:1px solid #313a4c; border-radius:.65rem; background:#141a24; }
 .formActions { justify-content:flex-end; }
 @media(max-width:760px) { .columns,.editorColumns { grid-template-columns:1fr; } .titleRow,.header { align-items:flex-start; flex-direction:column; } .formGrid { grid-template-columns:1fr; } .formGrid .wide { grid-column:auto; } }
+
+.moduleRow { display:flex; align-items:center; gap:.75rem; }
+.moduleRow .moduleLink { flex:1; min-width:0; }
+.importControl { display:grid; gap:.4rem; max-width:26rem; margin:.5rem 0 1rem; color:#d8deec; font-size:.9rem; }
+.importControl input { font-size:.85rem; }
