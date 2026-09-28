@@ -12,6 +12,7 @@ using StudyPlatform.Api.Services.Learning;
 using StudyPlatform.Api.Services.Modules;
 using StudyPlatform.Api.Services.Classrooms;
 using StudyPlatform.Api.Services.Students;
+using StudyPlatform.Api.Services.Progress;
 using StudyPlatform.Api.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +49,7 @@ builder.Services.AddScoped<ActivityCompatibilityService>();
 builder.Services.AddScoped<ActivitySelectionService>();
 builder.Services.AddScoped<StudySessionService>();
 builder.Services.AddScoped<StudentStudyCatalogService>();
+builder.Services.AddScoped<TeacherProgressService>();
 builder.Services.AddScoped<IPasswordHasher<Teacher>, PasswordHasher<Teacher>>();
 builder.Services.AddScoped<IPasswordHasher<Student>, PasswordHasher<Student>>();
 builder.Services.AddScoped<ApiCookieAuthenticationEvents>();

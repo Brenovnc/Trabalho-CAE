@@ -121,6 +121,7 @@ public sealed class AuthService(
                 .SetProperty(candidate => candidate.TemporaryAccessCodeHash, (string?)null)
                 .SetProperty(candidate => candidate.TemporaryAccessCodeExpiresAtUtc, (DateTime?)null)
                 .SetProperty(candidate => candidate.IsActivated, true)
+                .SetProperty(candidate => candidate.LastAccessAtUtc, (DateTime?)now)
                 .SetProperty(candidate => candidate.UpdatedAtUtc, now), cancellationToken);
 
         if (activatedRows != 1)
@@ -131,6 +132,7 @@ public sealed class AuthService(
         student.IsActivated = true;
         student.TemporaryAccessCodeHash = null;
         student.TemporaryAccessCodeExpiresAtUtc = null;
+        student.LastAccessAtUtc = now;
         return student;
     }
 
@@ -155,6 +157,8 @@ public sealed class AuthService(
             throw InvalidCredentials();
         }
 
+        student.LastAccessAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+        await dbContext.SaveChangesAsync(cancellationToken);
         return student;
     }
 

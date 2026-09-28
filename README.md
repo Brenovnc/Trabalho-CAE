@@ -1,201 +1,133 @@
 # Plataforma Educacional de Repetição Espaçada
 
-Aplicação web educacional definida em [`SPEC.md`](SPEC.md). O repositório está sendo construído em etapas; esta etapa prepara somente a infraestrutura inicial.
+MVP web para professores criarem módulos de estudo e acompanharem a aprendizagem individual dos alunos por recuperação ativa e repetição espaçada. A especificação do produto está em [SPEC.md](SPEC.md); o formato JSON de intercâmbio tem um exemplo em [docs/module-exchange-v1.example.json](docs/module-exchange-v1.example.json).
 
-## Stack
+## Escopo e arquitetura
 
-- Frontend: React, TypeScript, Vite, CSS Modules e Vitest.
-- Backend: C#, ASP.NET Core, .NET 10, Entity Framework Core e xUnit.
-- Banco local: PostgreSQL via Docker Compose.
+O MVP inclui cadastro/login de professor e aluno, módulos e conceitos, pré-requisitos, importação/exportação JSON, turmas e matrículas manuais ou CSV, códigos temporários, sessões de estudo, histórico de tentativas, cinco minigames e acompanhamento básico do professor. Não inclui recursos pós-MVP como ranking, moedas, notificações, offline/PWA, biblioteca pública, IA ou analytics avançado.
 
-## Requisitos locais
+\`\`\`text
+React + TypeScript + Vite
+        ↓ HTTP/JSON
+ASP.NET Core 10 → Services → EF Core → PostgreSQL
+\`\`\`
 
-- .NET SDK 10.
-- Node.js e npm em versões compatíveis com o Vite configurado.
-- Docker com Docker Compose.
+O frontend cuida da interface e da interação. O backend é a autoridade para autorização, correção, seleção de atividades, progressão pedagógica, pré-requisitos e agendamento.
 
-## Iniciar o PostgreSQL
+| Parte | Tecnologias principais |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, CSS Modules, Vitest |
+| Backend | C#, ASP.NET Core/.NET 10, EF Core 10, xUnit |
+| Dados | PostgreSQL 17, Npgsql, migrations EF Core |
+| Repetição espaçada | Fsrs.Sharp 2.0.0, FSRS-6, encapsulado em FsrsService |
 
-Na raiz do repositório:
+Estrutura: frontend/src contém páginas, serviços, layouts e minigames; backend/StudyPlatform.Api contém controllers, DTOs, domínio, serviços, dados e migrations; backend/Tests/StudyPlatform.Tests contém testes; docs/ contém exemplos e checklist manual.
 
-```bash
+## Pré-requisitos e portas
+
+- Git;
+- .NET SDK 10;
+- Node.js compatível com Vite 7 e npm;
+- Docker Desktop com Docker Compose.
+
+Portas locais: frontend 5173, API 5080, PostgreSQL 5432. O CORS em Development permite somente a origem configurada em Frontend:Origin, por padrão http://localhost:5173. Use --strictPort no Vite para ele não trocar silenciosamente para outra porta.
+
+## Primeira execução no Windows/PowerShell
+
+Execute na raiz do repositório. Em um terminal, inicie o PostgreSQL e aplique o schema:
+
+\`\`\`powershell
 docker compose up -d postgres
-```
-
-O banco fica disponível em `localhost:5432`. O usuário, banco e senha definidos no Compose são exclusivamente para desenvolvimento local; não os reutilize em produção. Os dados persistem no volume `postgres_data`.
-
-## Iniciar o backend
-
-Em um terminal:
-
-```bash
-cd backend/StudyPlatform.Api
-dotnet run
-```
-
-A API usa ConnectionStrings:DefaultConnection. O perfil local carrega essa configuração de appsettings.Development.json; ela pode ser substituída pela variável de ambiente ConnectionStrings__DefaultConnection. O contexto do EF Core e a migration inicial InitialDomain estão configurados para PostgreSQL.
-
-O endpoint `http://localhost:5080/health` confirma que a aplicação iniciou e que a configuração de conexão foi carregada. Nesta etapa ele não executa uma consulta ao banco.
-
-
-## Autenticação local
-
-A API usa `http://localhost:5080` e permite em Development apenas a origem `http://localhost:5173`, com credenciais. Para outra porta, ajuste `Frontend:Origin` em `appsettings.Development.json`. CORS não é aberto em produção.
-
-Antes de qualquer operação POST/PUT/PATCH/DELETE em `/api`, o cliente obtém `GET /api/auth/csrf`. A resposta contém `token` e define o cookie HTTP-only `CAE-XSRF`; envie o token retornado no cabeçalho `X-CSRF-TOKEN`. O cliente React mantém o token somente em memória e envia cookies com `credentials: include`. Após login, cadastro, ativação ou logout, ele solicita outro token, pois o antiforgery associa o token à identidade atual.
-
-Em Development, as chaves de cookies e CSRF ficam apenas na memória; reiniciar a API invalida as sessões locais. Fora de Development, configure armazenamento persistente e compartilhado de chaves para a implantação.
-
-A sessão usa o cookie HTTP-only `CAE.Auth`, `SameSite=Strict` e expira em oito horas. Em HTTP de Development, `Secure` segue o esquema da requisição; fora de Development é sempre habilitado. Endpoints disponíveis: `POST /api/auth/teachers/register`, `POST /api/auth/teachers/login`, `POST /api/auth/students/activate`, `POST /api/auth/students/login`, `POST /api/auth/logout` e `GET /api/auth/me`.
-
-Os testes HTTP xUnit usam um banco PostgreSQL exclusivo chamado `trabalho_cae_auth_test`, separado do banco local do produto. Crie-o uma vez com PostgreSQL iniciado:
-
-~~~bash
-docker compose exec postgres psql -U trabalho_cae -d postgres -c "CREATE DATABASE trabalho_cae_auth_test;"
-~~~
-
-O teste aplica as migrations e limpa as tabelas desse banco de teste. Nunca configure `STUDYPLATFORM_TEST_CONNECTION` para o banco normal de desenvolvimento.
-## Iniciar o frontend
-
-Em outro terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Abra o endereço informado pelo Vite, normalmente `http://localhost:5173`.
-
-## Executar os testes
-
-Frontend:
-
-```bash
-cd frontend
-npm test
-```
-
-Backend:
-
-```bash
-dotnet test backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj
-```
-
-## Estrutura inicial
-
-```text
-.
-├── backend/
-│   ├── StudyPlatform.Api/
-│   │   ├── Controllers/
-│   │   ├── Data/
-│   │   ├── DTOs/
-│   │   ├── Domain/
-│   │   ├── Exceptions/
-│   │   ├── Migrations/
-│   │   ├── Models/
-│   │   ├── Repositories/
-│   │   ├── Services/
-│   │   └── Validators/
-│   └── Tests/StudyPlatform.Tests/
-├── frontend/src/
-│   ├── assets/
-│   ├── components/
-│   ├── hooks/
-│   ├── layouts/
-│   ├── minigames/
-│   ├── pages/
-│   ├── routes/
-│   ├── services/
-│   ├── types/
-│   └── utils/
-├── docker-compose.yml
-└── docs/
-```
-
-## Migrations e horários
-
-Instale a ferramenta EF Core CLI compatível com a versão do projeto:
-
-~~~bash
+docker compose ps
 dotnet tool install --global dotnet-ef --version 10.0.0
-~~~
+dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --startup-project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
+\`\`\`
 
-Para criar uma migration após alterações futuras no modelo e aplicá-la:
+Se dotnet-ef 10.0.0 já estiver instalado, pule a instalação. O Compose cria o banco local trabalho_cae e persiste os dados no volume postgres_data. A API não aplica migrations automaticamente: rode database update antes da primeira inicialização e após receber migrations novas.
 
-~~~bash
-dotnet ef migrations add NomeDaMigracao --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj --output-dir Migrations
-dotnet ef database update --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-~~~
+Inicie a API em outro terminal, também na raiz:
 
-Para reverter todas as migrations no banco local de desenvolvimento e remover a migration mais recente do projeto:
+\`\`\`powershell
+dotnet run --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
+\`\`\`
 
-~~~bash
-dotnet ef database update 0 --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-dotnet ef migrations remove --project backend/StudyPlatform.Api/StudyPlatform.Api.csproj
-~~~
+Inicie o frontend em um terceiro terminal:
 
-database update 0 remove as tabelas criadas pelas migrations e seus dados; use-o somente em um banco local descartável ou depois de fazer backup.
+\`\`\`powershell
+Set-Location frontend
+npm install
+npm run dev -- --port 5173 --strictPort
+\`\`\`
 
-Os campos de data e hora do domínio são DateTime em UTC, identificados pelo sufixo Utc, e são mapeados para timestamp with time zone no PostgreSQL. Crie e atualize esses valores com DateTime.UtcNow; o Npgsql espera valores UTC para esse tipo.
+Abra http://localhost:5173. Crie uma conta de professor na tela inicial; não há usuário demo nem seed automático. O fluxo rápido é: professor cria módulo e turma, cadastra aluno e associa o módulo; aluno ativa a conta com o código temporário, escolhe o módulo e estuda; professor acompanha o resumo na turma.
 
-A migration usa uma coluna gerada lower(Code) e um índice único para o código da turma ser case-insensitive. EmailNormalized segue o mesmo mecanismo para tratar e-mails sem distinção de caixa. O limite de 32 caracteres para o código da turma é a decisão de tamanho máximo razoável adotada nesta implementação.
+## Configuração local e segurança
 
-Cada tentativa exige um snapshot JSONB do conteúdo apresentado, para preservar o que o aluno viu mesmo se o conteúdo do conceito ou atividade for editado ou desativado.
+Os valores de appsettings.Development.json e docker-compose.yml são credenciais locais de desenvolvimento, não segredos de produção. Não os reutilize fora do ambiente local. Sobrescreva a conexão da API com a variável ConnectionStrings__DefaultConnection; o frontend aceita VITE_API_BASE_URL e, por padrão, chama http://localhost:5080. Para trocar a origem do frontend em Development, ajuste Frontend:Origin em appsettings.Development.json. Não habilite CORS amplo para contornar erro de porta.
 
-## Gestão de conteúdo pedagógico
+Não há arquivo .env necessário. Arquivos .env locais são ignorados pelo Git. Configure credenciais reais por mecanismo de secrets/environment próprio do ambiente de implantação; não as grave no repositório ou nos logs. Senhas e códigos temporários são armazenados no banco como hashes.
 
-A Etapa 5 usa rotas aninhadas sob `/api/modules`. Conceitos e todas as suas keywords, pistas, pré-requisitos e atividades são criados/editados como um único recurso agregado em `POST/PUT /api/modules/{moduleId}/concepts/{conceptId}`. Isso mantém a gravação coerente e dá ao frontend um contrato previsível. Atividades omitidas em uma edição são desativadas para preservar tentativas; keywords e pistas são atualizadas pela lista e posição, respectivamente.
+A autenticação usa cookies HTTP-only CAE.Auth e antiforgery CAE-XSRF, com token CSRF enviado em X-CSRF-TOKEN. Em Development, as chaves de Data Protection são efêmeras: reiniciar a API invalida cookies locais. Se a sessão antiga causar erro, limpe os cookies CAE.Auth e CAE-XSRF de localhost e entre novamente. Fora de Development, cookies usam Secure; configure armazenamento persistente e compartilhado de chaves de Data Protection antes de executar múltiplas instâncias.
 
-Rotas adicionais: `GET/POST /api/modules`, `GET/PUT /api/modules/{id}`, `POST /api/modules/{id}/duplicate|publish|archive`, `GET /api/modules/{id}/publication-validation`, `GET /api/modules/{moduleId}/concepts`, `GET /api/modules/{moduleId}/concepts/{conceptId}`, `POST /api/modules/{moduleId}/concepts/{conceptId}/duplicate|deactivate`.
+GET http://localhost:5080/health retorna estado do processo e se a connection string está configurada (databaseConfigured). Não executa consulta ao PostgreSQL; o health endpoint não é um teste de disponibilidade do banco. A aplicação deve ser iniciada com PostgreSQL acessível e migrations aplicadas.
 
-## Intercâmbio de módulos JSON
+## Banco, migrations e testes
 
-O formato de intercâmbio atual usa `schemaVersion: 1`; um exemplo estrutural está em `docs/module-exchange-v1.example.json`. Ele contém um objeto `module` e conceitos identificados por `externalId`; pré-requisitos referenciam esses IDs externos. IDs internos, proprietário, turmas e dados de aprendizagem não fazem parte do arquivo.
+As migrations estão em backend/StudyPlatform.Api/Migrations. Para aplicar alterações futuras, use dotnet ef database update com os argumentos --project e --startup-project acima. A CLI precisa corresponder ao EF Core 10.0.0. O repositório não inclui manifesto de ferramenta; a instalação global mostrada na primeira execução é a opção documentada.
 
-O backend inclui conteúdo e atividades ativos ou inativos na exportação para preservar o material. A importação aceita JSON (`POST /api/modules/import`, com `Content-Type: application/json`) e a exportação baixa JSON em `GET /api/modules/{id}/export`. O arquivo deve ter até 1 MiB e propriedades fora do schema são rejeitadas. Versões de schema desconhecidas são rejeitadas. Toda importação pertence ao professor autenticado e começa em `DRAFT`; o conteúdo pode precisar de ajustes antes da publicação, que usa a validação da Etapa 5.
+Os testes de integração usam bancos separados e truncam suas tabelas. Crie uma vez os bancos ausentes antes de executar a suíte; este comando PowerShell só cria os que ainda não existirem:
 
-## Turmas e alunos
+\`\`\`powershell
+$testDatabases = @('trabalho_cae_auth_test', 'trabalho_cae_classrooms_test', 'trabalho_cae_modules_test', 'trabalho_cae_student_csv_test', 'trabalho_cae_learning_test')
+foreach ($database in $testDatabases) {
+  $exists = docker compose exec -T postgres psql -U trabalho_cae -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$database'"
+  if ($exists.Trim() -ne '1') { docker compose exec -T postgres createdb -U trabalho_cae $database }
+}
+\`\`\`
 
-Na Etapa 7, a gestão usa as rotas `/api/classrooms` e recursos aninhados `/api/classrooms/{id}/modules` e `/api/classrooms/{id}/students`. Apenas professores podem usá-las. O código da turma é normalizado para maiúsculas e aceita de 3 a 32 caracteres alfanuméricos, com hífens somente entre grupos (por exemplo, `TURMA-A`).
+As factories conferem o nome permitido antes de limpar; não aponte variáveis STUDYPLATFORM_*_TEST_CONNECTION para trabalho_cae. A conexão padrão de cada factory já seleciona seu banco de teste.
 
-O cadastro e a redefinição retornam o código temporário uma única vez. Ele possui seis caracteres do alfabeto `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, gerados por `RandomNumberGenerator`, e expira em sete dias. O banco conserva somente o hash produzido pelo `PasswordHasher<Student>`. Após reset, a senha anterior deixa de funcionar; a ativação da Etapa 4 consome o código novo.
+Na raiz, os comandos de backend são:
 
-## Importação de alunos por CSV (Etapa 8)
+\`\`\`powershell
+dotnet restore backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj
+dotnet build backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj
+dotnet build -c Release backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj
+dotnet test backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj
+\`\`\`
 
-Na tela da turma, selecione um arquivo de até 1 MiB e analise-o antes de confirmar. O formato UTF-8 aceita BOM, CRLF/LF e campos CSV entre aspas; o cabeçalho obrigatório é matricula, e nome é opcional. Colunas desconhecidas ou repetidas são rejeitadas. Matrículas preservam zeros à esquerda e seguem a mesma comparação exata do cadastro manual.
+No terminal do frontend (frontend/):
 
-Exemplo:
+\`\`\`powershell
+npm install
+npm test -- --run
+npm run build
+\`\`\`
 
-    matricula,nome
-    12345,João
-    12346,Maria
-    12347,
+## Fluxos do MVP
 
-O preview não grava dados nem gera códigos. A confirmação reenvia e revalida o mesmo arquivo; linhas inválidas, duplicadas no arquivo ou já cadastradas são ignoradas, enquanto as demais podem ser importadas. O limite é de 2.000 linhas de dados. Após a confirmação, o navegador baixa imediatamente matricula,nome,codigo_temporario apenas para alunos criados. Códigos não são recuperáveis depois; em caso de perda, redefina o acesso do aluno.
+### Professor, módulos e intercâmbio JSON
 
-Endpoints do fluxo: POST /api/classrooms/{classroomId}/students/import/preview e POST /api/classrooms/{classroomId}/students/import/confirm. Ambos exigem sessão de professor e token CSRF.
-## Motor pedagógico e FSRS (Etapa 9)
+O cadastro de professor começa pela tela inicial. Na área do professor, use Dashboard, Módulos, Turmas e Conta. Um módulo pode ser editado, duplicado, publicado e arquivado; publicação valida conceitos, atividades e pré-requisitos. A edição de módulo publicado vale imediatamente para as turmas associadas.
 
-O backend cria `StudentConceptState` sob demanda; conceitos sem registro são tratados como `NEW`. A progressão define como estudar (`NEW → EXPOSURE → RECOGNITION → GUIDED_RECALL → FREE_RECALL → MASTERED`), enquanto FSRS define quando revisar. Conceitos ativos só podem ser introduzidos quando o módulo está publicado, associado à turma ativa do aluno e todos os pré-requisitos estão `MASTERED`.
+Importe o JSON oficial pela tela de módulos e exporte um módulo já existente para backup. O schema atual usa schemaVersion: 1; consulte o exemplo ligado no início deste README. O arquivo é limitado a 1 MiB, campos fora do schema são rejeitados e a importação é atômica. Referências externas e ciclos são validados; a importação cria um módulo DRAFT pertencente ao professor atual.
 
-A integração usa `Fsrs.Sharp` 2.0.0 (FSRS-6, licença MIT) exclusivamente dentro de `FsrsService`. O estado de memória usa dificuldade, estabilidade, vencimento, última revisão, elapsed/scheduled days, repetições, lapses e estado/step FSRS serializado na coluna existente `FsrsState`. A sequência padrão da biblioteca mantém intervalos curtos de aprendizagem; fuzzing está desativado para scheduling reproduzível. `MASTERED` continua recebendo revisões; acerto preserva o estado e erro regressa para `FREE_RECALL`.
+### Turmas, alunos, CSV e códigos temporários
 
-Para chegar a `MASTERED`, o primeiro acerto de `FREE_RECALL` inicia a sequência válida e agenda revisão; o segundo só conta em outra sessão quando o vencimento anterior já chegou. Erro em `FREE_RECALL` regressa para `GUIDED_RECALL` e zera contador e sessão da sequência válida, mantendo os horários históricos de sucesso. Rating interno: erro → `AGAIN`; acerto com tentativa extra ou ao menos duas pistas → `HARD`; acerto limpo em até 5 segundos → `EASY`; os demais acertos → `GOOD`. Tempo sozinho não transforma acerto em erro nem em `HARD`.
+O código da turma é globalmente único sem distinção de maiúsculas/minúsculas. Matrículas são únicas dentro da turma e preservam zeros à esquerda. O professor pode cadastrar um aluno manualmente ou fazer preview e confirmar um CSV UTF-8 de até 1 MiB e 2.000 linhas. Nome é opcional. Linhas inválidas, duplicadas no arquivo ou já cadastradas são ignoradas na confirmação; as válidas são persistidas.
 
-Execute os testes do motor com `dotnet test backend/Tests/StudyPlatform.Tests/StudyPlatform.Tests.csproj`. Os testes de persistência usam exclusivamente o banco `trabalho_cae_learning_test` e conferem o nome antes da limpeza.
+Ao criar ou redefinir acesso, o código temporário é exibido/baixado apenas naquele momento, possui seis caracteres e expira em sete dias. Após cinco tentativas inválidas, é necessário redefini-lo. O banco mantém apenas o hash; ativação consome o código e define uma senha. O CSV de credenciais baixado na confirmação é a única cópia em texto puro; códigos antigos não podem ser recuperados.
 
-## Sessões e correção de atividades (Etapa 10)
+### Aprendizagem, sessões e FSRS
 
-O backend disponibiliza sessões apenas para alunos ativos e autenticados, com turma ativa e módulo publicado associado à turma. `POST /api/student/modules/{moduleId}/sessions` inicia ou retoma a única sessão ativa do aluno para aquele módulo. `GET /api/student/sessions/{sessionId}` e `/next` recuperam a apresentação atual; `POST /api/student/sessions/{sessionId}/activities/{presentationId}/reveal` revela a próxima palavra-chave/pista; `POST /api/student/sessions/{sessionId}/answer` corrige e registra uma resposta; `POST /api/student/sessions/{sessionId}/abandon` abandona sem apagar tentativas.
+O backend evolui conceitos por NEW → EXPOSURE → RECOGNITION → GUIDED_RECALL → FREE_RECALL → MASTERED, com regressões em erros. Todos os pré-requisitos devem estar MASTERED antes da liberação. O estado pedagógico decide como estudar; FsrsService usa FSRS-6 para decidir quando revisar. Um conceito dominado continua em manutenção. Para dominar, dois acertos de evocação livre devem ocorrer em sessões diferentes e após o vencimento de uma revisão real.
 
-A seleção é incremental: cada resposta persiste tentativa e progressão antes de selecionar a seguinte. `TotalActivities` conta apresentações entregues até aquele momento (incluindo a atual); a sessão termina ao atingir 10 ou quando não há outra atividade compatível e ainda não usada. O serviço prioriza revisões vencidas, erros recentes (janela de 14 dias), conceitos em andamento e conceitos novos elegíveis; desempates usam estado/tipo principal e IDs estáveis. Não há repetição de um mesmo cartão na sessão.
+Uma sessão tem alvo de dez atividades, mas termina antes se não houver mais conteúdo elegível sem repetição forçada. Cada resposta é corrigida e persistida pelo backend; sessões ativas podem ser retomadas e sessões abandonadas preservam tentativas. Os cinco minigames são Exposure, True/False, Fill Blank, Guess Concept e Ordering. Ordenação é complementar e não obrigatória para publicar. O backend só revela keywords/pistas quando solicitado e permanece autoridade sobre respostas corretas e progresso.
 
-Uma apresentação persistida guarda o snapshot privado usado para correção e a API projeta somente os campos públicos. A tentativa aponta para essa apresentação por uma referência única; locks transacionais do PostgreSQL serializam respostas concorrentes. Respostas repetidas recebem conflito HTTP 409 e não avançam o estado novamente. Todas as mutações exigem o token CSRF existente (`X-CSRF-TOKEN`). Os testes usam exclusivamente `trabalho_cae_learning_test`.
+### Acompanhamento do professor
 
-## Área de estudo do aluno
+O dashboard conta módulos não arquivados do professor, turmas ativas e alunos ativos das turmas do professor. A tabela da turma apresenta matrícula, nome, progresso, revisões pendentes e último acesso; progresso usa conceitos ativos de módulos publicados associados. A migration AddStudentLastAccessAtUtc registra o último acesso autenticado do aluno. Professor só consulta seus próprios dados; endpoints de relatório exigem papel TEACHER.
 
-Após entrar como aluno, a área `/student` lista somente módulos publicados associados à turma do aluno. Cada módulo mostra título, disciplina e descrição; o resumo permite iniciar ou retomar uma sessão ativa. As rotas usadas são `/student`, `/student/modules/:moduleId` e `/student/sessions/:sessionId`.
+## Limitações e validação manual
 
-A sessão usa a atividade e o timestamp retornados pela API. Os cinco minigames ficam isolados em `frontend/src/minigames/`; a API corrige respostas e persiste revelações. Para testar uma sessão, ative um aluno, associe à turma um módulo publicado com conceitos e atividades válidas, entre como aluno e escolha o módulo. Os jogos exibidos seguem a elegibilidade pedagógica, portanto nem todos precisam aparecer na mesma sessão.
+Não há seed de demonstração, recuperação por e-mail, chaves de cookie persistidas em Development ou inspeção automática entre navegadores. Não são parte do MVP cruzadinha, matching, simulações/diagramas, ranking, gamificação, analytics avançado, notificações, modo offline/PWA, compartilhamento/biblioteca pública ou IA. Consulte docs/manual-validation.md para a sequência de verificação manual, incluindo desktop e celular.

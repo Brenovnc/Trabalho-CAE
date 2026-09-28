@@ -1,0 +1,12 @@
+.page { width: min(100% - 2.5rem, 72rem); margin: 0 auto; padding: 3rem 0; }
+.page h1 { margin: .35rem 0 1.5rem; font-size: clamp(2rem,5vw,3rem); }
+.eyebrow { margin: 0; color: #aab2ff; font-size: .76rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.card { max-width: 38rem; padding: clamp(1.2rem,4vw,2rem); border: 1px solid #2c3240; border-radius: 1rem; background: #191e29; }
+.avatar { display: grid; width: 3.5rem; height: 3.5rem; place-items: center; border-radius: 50%; color: #d4d5ff; background: #323356; font-size: 1.3rem; font-weight: 750; }
+.identity h2 { margin: .9rem 0 .2rem; }
+.identity p { margin: 0; color: #9ea7b9; }
+.card dl { display: grid; grid-template-columns: 8rem minmax(0,1fr); gap: .8rem; margin: 1.5rem 0; }
+.card dt { color: #aab2c5; }
+.card dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.card button { min-height: 2.8rem; padding: .65rem .9rem; border: 1px solid #7d83d6; border-radius: .6rem; color: #f7f7ff; background: #494d82; font: inherit; cursor: pointer; }
+@media(max-width:480px) { .card dl { grid-template-columns: 1fr; gap: .25rem; } .card dd { margin-bottom: .7rem; } }

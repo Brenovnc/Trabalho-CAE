@@ -10,11 +10,11 @@
 .formGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem; }
 .formGrid label,.conceptForm>label,.activity label { display:grid; gap:.35rem; color:#d8deec; font-size:.9rem; }
 .formGrid .wide { grid-column:1/-1; }
-input,textarea,select { width:100%; border:1px solid #424b5f; border-radius:.5rem; padding:.65rem .7rem; color:#f5f6fb; background:#111620; font:inherit; }
-textarea { resize:vertical; }
-input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible { outline:2px solid #aab2ff; outline-offset:2px; }
-button { border:1px solid #8e98ff; border-radius:.55rem; padding:.65rem .9rem; color:#121522; background:#aab2ff; font:inherit; font-weight:650; cursor:pointer; }
-button:disabled { opacity:.5; cursor:not-allowed; }
+.page input,.page textarea,.page select { width:100%; border:1px solid #424b5f; border-radius:.5rem; padding:.65rem .7rem; color:#f5f6fb; background:#111620; font:inherit; }
+.page textarea { resize:vertical; }
+.page input:focus-visible,.page textarea:focus-visible,.page select:focus-visible,.page button:focus-visible { outline:2px solid #aab2ff; outline-offset:2px; }
+.page button { border:1px solid #8e98ff; border-radius:.55rem; padding:.65rem .9rem; color:#121522; background:#aab2ff; font:inherit; font-weight:650; cursor:pointer; }
+.page button:disabled { opacity:.5; cursor:not-allowed; }
 .secondary { border-color:#596684; color:#e8ebf8; background:#343e54; }
 .danger { border-color:#89525a; color:#ffe3e7; background:#572e37; }
 .moduleList,.conceptList { list-style:none; margin:0; padding:0; }
@@ -32,8 +32,8 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 .issues { margin:0; padding-left:2rem; }
 .conceptForm { display:grid; gap:1rem; }
 .conceptForm small { color:#aab2c5; font-weight:400; }
-fieldset { min-width:0; border:1px solid #3b4558; border-radius:.7rem; padding:1rem; }
-legend { padding:0 .35rem; color:#dce1f0; font-weight:650; }
+.page fieldset { min-width:0; border:1px solid #3b4558; border-radius:.7rem; padding:1rem; }
+.page legend { padding:0 .35rem; color:#dce1f0; font-weight:650; }
 .check { display:flex; align-items:center; gap:.5rem; margin:.45rem 0; color:#d8deec; }
 .check input { width:auto; }
 .activity { display:grid; gap:.65rem; margin:.7rem 0 1rem; padding:.85rem; border:1px solid #313a4c; border-radius:.65rem; background:#141a24; }

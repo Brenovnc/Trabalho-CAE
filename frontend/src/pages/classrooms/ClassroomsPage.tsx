@@ -4,10 +4,10 @@ import { moduleApi } from '../../services/moduleApi'
 import type { ModuleSummary } from '../../types/modules'
 import styles from './ClassroomsPage.module.css'
 
-type Props = { onLogout: () => void; onModules: () => void }
+type Props = { onProgress: (classroomId: string) => void }
 const messageOf = (error: unknown) => error instanceof Error ? error.message : 'Não foi possível concluir a operação.'
 
-export function ClassroomsPage({ onLogout, onModules }: Props) {
+export function ClassroomsPage({ onProgress }: Props) {
   const [items, setItems] = useState<ClassroomSummary[]>([])
   const [modules, setModules] = useState<ModuleSummary[]>([])
   const [selected, setSelected] = useState<ClassroomDetails | null>(null)
@@ -20,8 +20,9 @@ export function ClassroomsPage({ onLogout, onModules }: Props) {
   const [csvPreview, setCsvPreview] = useState<StudentCsvPreview | null>(null)
   const [csvResult, setCsvResult] = useState<{ createdCount: number; skippedRows: StudentCsvPreview['rows'] } | null>(null)
   const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  async function refresh() { setItems(await classroomApi.list()) }
+  async function refresh() { setLoading(true); try { setItems(await classroomApi.list()) } finally { setLoading(false) } }
   async function open(id: string) {
     setError(''); setNotice(''); setBusy(true)
     try { const [classroom, list] = await Promise.all([classroomApi.get(id), classroomApi.students(id)]); setSelected(classroom); setStudents(list); setName(classroom.name); setCode(classroom.code) }
@@ -76,14 +77,15 @@ export function ClassroomsPage({ onLogout, onModules }: Props) {
   }
 
   return <main className={styles.page}>
-    <header className={styles.header}><div><p>Área do professor</p><h1>Turmas e alunos</h1></div><div><button type="button" onClick={onModules}>Módulos</button> <button type="button" onClick={onLogout}>Sair</button></div></header>
+    <header className={styles.header}><div><p>Organização</p><h1>Turmas e alunos</h1><p>Gerencie matrículas, módulos associados e o progresso dos alunos.</p></div></header>
     {(error || notice) && <p role="status" className={error ? styles.error : styles.notice}>{error || notice}</p>}{busy && <p role="status">Salvando…</p>}
     {credentials && <section className={styles.oneTime}><h2>Código temporário — mostrar uma única vez</h2><p>Matrícula: {credentials.enrollmentNumber}{credentials.name ? ` · ${credentials.name}` : ''}</p><code>{credentials.temporaryAccessCode}</code><p>Expira em {new Date(credentials.expiresAtUtc).toLocaleString()}</p><button type="button" onClick={() => void copyCode()}>Copiar código</button><button type="button" onClick={() => setCredentials(null)}>Fechar</button></section>}
     {!selected ? <div className={styles.columns}>
       <form className={styles.panel} onSubmit={saveClassroom}><h2>Nova turma</h2><label>Nome<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label><label>Código<input required minLength={3} maxLength={32} pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*" title="Use letras, números e hífens entre grupos" value={code} onChange={e => setCode(e.target.value)} /></label><button disabled={busy}>Criar turma</button></form>
-      <section className={styles.panel}><h2>Minhas turmas</h2>{items.length ? <ul>{items.map(x => <li key={x.id}><button className={styles.link} type="button" onClick={() => { setCredentials(null); void open(x.id) }}><strong>{x.name}</strong><span>{x.code} · {x.studentCount} alunos · {x.moduleCount} módulos · {x.status}</span></button></li>)}</ul> : <p>Nenhuma turma cadastrada.</p>}</section>
+      <section className={styles.panel}><h2>Minhas turmas</h2>{loading ? <p role="status">Carregando turmas...</p> : items.length ? <ul>{items.map(x => <li key={x.id}><button className={styles.link} type="button" onClick={() => { setCredentials(null); void open(x.id) }}><strong>{x.name}</strong><span>{x.code} · {x.studentCount} alunos · {x.moduleCount} módulos · {x.status}</span></button></li>)}</ul> : <p>Nenhuma turma cadastrada.</p>}</section>
     </div> : <>
       <button type="button" onClick={() => { setSelected(null); setCredentials(null); setNotice('') }}>← Minhas turmas</button>
+      <button type="button" onClick={() => onProgress(selected.id)}>Acompanhar progresso</button>
       <section className={styles.panel}><h2>{selected.name} <small>({selected.status})</small></h2><form className={styles.form} onSubmit={saveClassroom}><label>Nome<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label><label>Código<input required minLength={3} maxLength={32} pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*" value={code} onChange={e => setCode(e.target.value)} /></label><button disabled={busy}>Salvar</button><button type="button" disabled={busy || selected.status === 'Archived'} onClick={() => void run(() => classroomApi.archive(selected.id), 'Turma arquivada.')}>Arquivar</button></form>
         <h3>Módulos associados</h3><ul>{selected.modules.map(m => <li key={m.id}>{m.title} · {m.status} <button type="button" onClick={() => void run(() => classroomApi.unassign(selected.id, m.id), 'Módulo desassociado.')}>Desassociar</button></li>)}</ul>
         <form className={styles.form} onSubmit={e => { e.preventDefault(); if (moduleId) void run(() => classroomApi.assign(selected.id, moduleId), 'Módulo associado.') }}><label>Associar módulo publicado<select value={moduleId} onChange={e => setModuleId(e.target.value)}><option value="">Selecione…</option>{modules.filter(m => m.status === 1 || m.status === 'Published').map(m => <option key={m.id} value={m.id}>{m.title}</option>)}</select></label><button disabled={busy || !moduleId}>Associar</button></form>

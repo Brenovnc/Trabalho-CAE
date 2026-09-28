@@ -5,6 +5,11 @@ import { ClassroomsPage } from './pages/classrooms/ClassroomsPage'
 import { StudentModulePage } from './pages/student/StudentModulePage'
 import { StudentModulesPage } from './pages/student/StudentModulesPage'
 import { StudySessionPage } from './pages/student/StudySessionPage'
+import { TeacherLayout, type TeacherSection } from './layouts/TeacherLayout'
+import { TeacherDashboardPage } from './pages/dashboard/TeacherDashboardPage'
+import { TeacherAccountPage } from './pages/dashboard/TeacherAccountPage'
+import { ClassroomProgressPage } from './pages/classrooms/ClassroomProgressPage'
+import { StudentProgressPage } from './pages/classrooms/StudentProgressPage'
 import { ApiRequestError, getCurrentUser, logout, prepareCsrfToken, submitAuth } from './services/authApi'
 import type { AuthenticatedUser, AuthMode } from './types/auth'
 import styles from './App.module.css'
@@ -12,7 +17,6 @@ import styles from './App.module.css'
 function App() {
   const [user, setUser] = useState<AuthenticatedUser | null>(null)
   const [ready, setReady] = useState(false)
-  const [teacherArea, setTeacherArea] = useState<'modules' | 'classrooms'>('modules')
   const [notice, setNotice] = useState('')
   const [pathname, setPathname] = useState(window.location.pathname)
 
@@ -50,7 +54,7 @@ function App() {
   async function handleSubmit(mode: AuthMode, fields: Record<string, string>) {
     const authenticatedUser = await submitAuth(mode, fields)
     setUser(authenticatedUser)
-    navigate(authenticatedUser.role === 'STUDENT' ? '/student' : '/')
+    navigate(authenticatedUser.role === 'STUDENT' ? '/student' : '/teacher/dashboard')
     setNotice('Autenticação concluída.')
   }
 
@@ -79,9 +83,22 @@ function App() {
     return <StudentModulesPage onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
   }
 
-  if (ready && user?.role === 'TEACHER') return teacherArea === 'modules'
-    ? <ModulesPage onLogout={() => void handleLogout()} onClassrooms={() => setTeacherArea('classrooms')} />
-    : <ClassroomsPage onLogout={() => void handleLogout()} onModules={() => setTeacherArea('modules')} />
+  if (ready && user?.role === 'TEACHER') {
+    const studentProgressMatch = /^\/teacher\/classrooms\/([^/]+)\/students\/([^/]+)\/progress$/.exec(pathname)
+    const classroomProgressMatch = /^\/teacher\/classrooms\/([^/]+)\/progress$/.exec(pathname)
+    const section: TeacherSection = pathname.startsWith('/teacher/modules') ? 'modules'
+      : pathname.startsWith('/teacher/classrooms') ? 'classrooms'
+        : pathname.startsWith('/teacher/account') ? 'account' : 'dashboard'
+    if (!pathname.startsWith('/teacher/')) navigate('/teacher/dashboard', true)
+    let page
+    if (studentProgressMatch) page = <StudentProgressPage classroomId={studentProgressMatch[1]} studentId={studentProgressMatch[2]} onBack={() => navigate('/teacher/classrooms/' + studentProgressMatch[1] + '/progress')} />
+    else if (classroomProgressMatch) page = <ClassroomProgressPage classroomId={classroomProgressMatch[1]} onBack={() => navigate('/teacher/classrooms')} onStudent={studentId => navigate('/teacher/classrooms/' + classroomProgressMatch[1] + '/students/' + studentId + '/progress')} />
+    else if (section === 'modules') page = <ModulesPage />
+    else if (section === 'classrooms') page = <ClassroomsPage onProgress={classroomId => navigate('/teacher/classrooms/' + classroomId + '/progress')} />
+    else if (section === 'account') page = <TeacherAccountPage user={user} onLogout={() => void handleLogout()} />
+    else page = <TeacherDashboardPage onNavigate={navigate} />
+    return <TeacherLayout active={section} user={user} onNavigate={navigate}>{page}</TeacherLayout>
+  }
 
   return (
     <main className={styles.page}>

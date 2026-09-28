@@ -4,7 +4,6 @@ import type { Concept, ConceptInput, ModuleDetails, ModuleInput, ModuleSummary, 
 import { moduleStatusLabel } from '../../types/modules'
 import styles from './ModulesPage.module.css'
 
-type Props = { onLogout: () => void; onClassrooms: () => void }
 type ActivityDraft = { id?: string; statement: string; isCorrect: boolean; explanation: string }
 type FillDraft = { id?: string; text: string; answers: string; distractors: string }
 type OrderDraft = { id?: string; instruction: string; items: string }
@@ -55,17 +54,18 @@ function toConceptInput(draft: ConceptDraft): ConceptInput {
   }
 }
 
-export function ModulesPage({ onLogout, onClassrooms }: Props) {
+export function ModulesPage() {
   const [modules, setModules] = useState<ModuleSummary[]>([])
   const [selected, setSelected] = useState<ModuleDetails | null>(null)
   const [moduleDraft, setModuleDraft] = useState<ModuleInput>(blankModule)
   const [conceptDraft, setConceptDraft] = useState<ConceptDraft>(blankConcept())
   const [validation, setValidation] = useState<PublicationValidation | null>(null)
   const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
-  async function refreshList() { setModules(await moduleApi.list()) }
+  async function refreshList() { setLoading(true); try { setModules(await moduleApi.list()) } finally { setLoading(false) } }
   async function openModule(id: string) {
     try {
       setError(''); setNotice(''); setBusy(true)
@@ -177,10 +177,7 @@ export function ModulesPage({ onLogout, onClassrooms }: Props) {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div><p className={styles.eyebrow}>Área do professor</p><h1>Gestão de módulos</h1></div>
-        <div><button className={styles.secondary} type="button" onClick={onClassrooms}>Turmas e alunos</button><button className={styles.secondary} type="button" onClick={onLogout}>Sair</button></div>
-      </header>
+      <header className={styles.header}><div><p className={styles.eyebrow}>Biblioteca pedagógica</p><h1>Gestão de módulos</h1></div></header>
       {(error || notice) && <p className={error ? styles.error : styles.notice} role="status">{error || notice}</p>}
       {busy && <p className={styles.muted} role="status">Salvando…</p>}
 
@@ -193,7 +190,7 @@ export function ModulesPage({ onLogout, onClassrooms }: Props) {
           <section className={styles.panel}>
             <h2>Meus módulos</h2>
             <label className={styles.importControl}>Importar módulo JSON<input type="file" accept=".json,application/json" disabled={busy} onChange={(event) => void importFile(event)} /></label>
-            {modules.length === 0 ? <p className={styles.muted}>Você ainda não criou módulos.</p> : (
+            {loading ? <p className={styles.muted} role="status">Carregando lista...</p> : modules.length === 0 ? <p className={styles.muted}>Nenhum módulo criado.</p> : (
               <ul className={styles.moduleList}>{modules.map(module => (
                 <li key={module.id} className={styles.moduleRow}>
                   <button type="button" className={styles.moduleLink} onClick={() => void openModule(module.id)}>

@@ -14,7 +14,7 @@ public sealed class ClassroomService(ApplicationDbContext db, TimeProvider timeP
         await db.Classrooms.AsNoTracking().Where(x => x.TeacherId == teacherId)
             .OrderBy(x => x.Name)
             .Select(x => new ClassroomSummaryResponse(x.Id, x.Name, x.Code, x.Status.ToString(),
-                x.Students.Count, x.ClassroomModules.Count, x.CreatedAtUtc, x.UpdatedAtUtc))
+                x.Students.Count(student => student.IsActive), x.ClassroomModules.Count, x.CreatedAtUtc, x.UpdatedAtUtc))
             .ToListAsync(ct);
 
     public async Task<ClassroomDetailsResponse> GetAsync(Guid teacherId, Guid id, CancellationToken ct) =>

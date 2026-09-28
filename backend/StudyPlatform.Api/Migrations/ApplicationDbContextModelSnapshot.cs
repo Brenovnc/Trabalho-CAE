@@ -543,6 +543,9 @@ namespace StudyPlatform.Api.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("LastAccessAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Name")
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");

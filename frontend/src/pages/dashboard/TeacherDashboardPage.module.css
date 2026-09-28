@@ -1,0 +1,22 @@
+.page { width: min(100% - 2.5rem, 72rem); margin: 0 auto; padding: clamp(2rem, 5vw, 4rem) 0; }
+.intro { max-width: 42rem; margin-bottom: 2.3rem; }
+.intro h1 { margin: .35rem 0 .6rem; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.04em; line-height: 1.08; }
+.intro>p:last-child,.next p:last-child { color: #aeb5c4; line-height: 1.65; }
+.eyebrow { margin: 0; color: #aab2ff; font-size: .76rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; }
+.metrics article,.next { min-width: 0; border: 1px solid #292f3c; border-radius: 1rem; background: linear-gradient(145deg,#191e29,#151923); }
+.metrics article { display: flex; min-height: 13rem; flex-direction: column; align-items: flex-start; padding: 1.3rem; }
+.metricIcon { display: grid; width: 2.6rem; height: 2.6rem; place-items: center; border: 1px solid #41456f; border-radius: .8rem; color: #c7c9ff; background: #282a48; font-size: 1.1rem; }
+.metrics p { margin: 1.1rem 0 .15rem; color: #b6becc; font-size: .9rem; }
+.metrics strong { font-size: 2.25rem; font-variant-numeric: tabular-nums; }
+.metrics button { margin-top: auto; padding: .8rem 0 0; border: 0; color: #c8caff; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.next { display: flex; align-items: center; justify-content: space-between; gap: 2rem; margin-top: 1.2rem; padding: clamp(1.2rem,4vw,2rem); }
+.next h2 { margin: .4rem 0; font-size: 1.35rem; }
+.next p:last-child { max-width: 36rem; margin-bottom: 0; }
+.actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: .5rem; }
+.actions button,.error button { min-height: 2.8rem; padding: .65rem .9rem; border: 1px solid #7d83d6; border-radius: .6rem; color: #f7f7ff; background: #494d82; font: inherit; cursor: pointer; }
+.actions .secondary { border-color: #424a5c; background: #222938; }
+.state { padding: 1rem; color: #bec5d4; }
+.error { padding: 1rem; border: 1px solid #76424d; border-radius: .7rem; color: #ffd2d7; background: #351d25; }
+.error button { margin-left: .75rem; }
+@media(max-width:720px) { .metrics { grid-template-columns: 1fr; } .metrics article { min-height: 10rem; } .next { align-items: flex-start; flex-direction: column; gap: 1rem; } }

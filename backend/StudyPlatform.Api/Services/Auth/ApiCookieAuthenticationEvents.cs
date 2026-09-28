@@ -9,16 +9,21 @@ using StudyPlatform.Api.Domain.Enums;
 
 namespace StudyPlatform.Api.Services.Auth;
 
-public sealed class ApiCookieAuthenticationEvents(ApplicationDbContext dbContext) : CookieAuthenticationEvents
+public sealed class ApiCookieAuthenticationEvents(ApplicationDbContext dbContext, TimeProvider timeProvider) : CookieAuthenticationEvents
 {
     public override async Task ValidatePrincipal(CookieValidatePrincipalContext context)
     {
         if (context.Principal?.FindFirstValue(ClaimTypes.Role) != AuthRoles.Student) return;
         var studentId = context.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        var isActive = Guid.TryParse(studentId, out var id) && await dbContext.Students.AsNoTracking()
-            .AnyAsync(student => student.Id == id && student.IsActive && student.IsActivated &&
-                student.Classroom.Status == ClassroomStatus.Active);
-        if (isActive) return;
+        var student = Guid.TryParse(studentId, out var id)
+            ? await dbContext.Students.Include(item => item.Classroom).SingleOrDefaultAsync(item => item.Id == id)
+            : null;
+        if (student is { IsActive: true, IsActivated: true } && student.Classroom.Status == ClassroomStatus.Active)
+        {
+            student.LastAccessAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+            await dbContext.SaveChangesAsync(context.HttpContext.RequestAborted);
+            return;
+        }
 
         context.RejectPrincipal();
         await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

@@ -13,6 +13,7 @@ public sealed class Student
     public int TemporaryAccessCodeFailedAttempts { get; set; }
     public bool IsActivated { get; set; }
     public bool IsActive { get; set; } = true;
+    public DateTime? LastAccessAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
