@@ -48,7 +48,8 @@ public sealed class ActivitySelectionService(
             return null;
 
         var concepts = await db.Concepts.AsNoTracking()
-            .Where(c => c.ModuleId == session.ModuleId && c.IsActive)
+            .Where(c => c.ModuleId == session.ModuleId && c.IsActive
+                && (session.SelectedConceptId == null || c.Id == session.SelectedConceptId))
             .Include(c => c.Keywords.Where(k => k.IsActive))
             .Include(c => c.Clues.Where(cl => cl.IsActive))
             .Include(c => c.RecognitionActivities.Where(a => a.IsActive))
@@ -64,6 +65,13 @@ public sealed class ActivitySelectionService(
             .Where(p => p.StudySessionId == session.Id)
             .Select(p => new { p.ConceptId, p.ActivityType, p.ActivityId })
             .ToListAsync(ct);
+        var practiceUsage = session.Mode == StudySessionMode.FreePractice
+            ? await db.SessionActivityPresentations.AsNoTracking()
+                .Where(p => p.StudySession.StudentId == session.StudentId && p.StudySession.ModuleId == session.ModuleId
+                    && p.StudySession.Mode == StudySessionMode.FreePractice)
+                .GroupBy(p => p.ConceptId).Select(group => new { ConceptId = group.Key, Uses = group.Count() })
+                .ToDictionaryAsync(item => item.ConceptId, item => item.Uses, ct)
+            : new Dictionary<Guid, int>();
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var candidates = new List<Candidate>();
 
@@ -71,10 +79,19 @@ public sealed class ActivitySelectionService(
         {
             states.TryGetValue(concept.Id, out var state);
             var learningState = state?.LearningState ?? LearningState.New;
-            if (learningState == LearningState.Mastered && (state?.DueAtUtc is null || Utc(state.DueAtUtc.Value) > now)) continue;
-            if (learningState == LearningState.FreeRecall && state?.FreeRecallSuccessCount > 0 && (state.DueAtUtc is null || Utc(state.DueAtUtc.Value) > now)) continue;
-            if (learningState == LearningState.New && !await eligibility.CanIntroduceAsync(session.StudentId, concept.Id, ct)) continue;            var tier = GetTier(learningState, state, now);
-            foreach (var type in compatibility.GetCompatibleTypes(learningState == LearningState.New ? LearningState.Exposure : learningState))
+            if (session.Mode == StudySessionMode.Normal)
+            {
+                if (learningState == LearningState.Mastered && (state?.DueAtUtc is null || Utc(state.DueAtUtc.Value) > now)) continue;
+                if (learningState == LearningState.FreeRecall && state?.FreeRecallSuccessCount > 0 && (state.DueAtUtc is null || Utc(state.DueAtUtc.Value) > now)) continue;
+                if (learningState == LearningState.New && !await eligibility.CanIntroduceAsync(session.StudentId, concept.Id, ct)) continue;
+            }
+            var tier = session.Mode == StudySessionMode.FreePractice
+                ? practiceUsage.GetValueOrDefault(concept.Id)
+                : GetTier(learningState, state, now);
+            var types = session.Mode == StudySessionMode.FreePractice
+                ? Enum.GetValues<ActivityType>()
+                : compatibility.GetCompatibleTypes(learningState == LearningState.New ? LearningState.Exposure : learningState);
+            foreach (var type in types)
             {
                 foreach (var choice in BuildActivities(concept, type))
                 {
@@ -88,16 +105,20 @@ public sealed class ActivitySelectionService(
         var previousConceptId = await db.SessionActivityPresentations.AsNoTracking()
             .Where(x => x.StudySessionId == session.Id).OrderByDescending(x => x.SequenceNumber)
             .Select(x => (Guid?)x.ConceptId).FirstOrDefaultAsync(ct);
-        var ordered = candidates.OrderBy(c => c.Tier)
+        var ordered = session.Mode == StudySessionMode.FreePractice
+            ? candidates.OrderBy(c => c.Tier).ThenBy(c => c.Concept.Id).ThenBy(c => c.Type).ThenBy(c => c.ActivityId)
+            : candidates.OrderBy(c => c.Tier)
             .ThenBy(c => c.Tier == 0 ? c.State?.DueAtUtc : null)
             .ThenByDescending(c => c.Tier == 1 ? c.State?.LastFailureAtUtc : null)
             .ThenBy(c => c.Type == PrimaryType(c.State?.LearningState ?? LearningState.New) ? 0 : 1)
             .ThenBy(c => c.Concept.Id)
             .ThenBy(c => c.ActivityId);
-        var chosen = ordered.FirstOrDefault(c => c.Tier != candidates.Min(x => x.Tier) || c.Concept.Id != previousConceptId)
-            ?? ordered.First();
+        var chosen = session.Mode == StudySessionMode.FreePractice
+            ? ordered.FirstOrDefault(c => c.Concept.Id != previousConceptId) ?? ordered.First()
+            : ordered.FirstOrDefault(c => c.Tier != candidates.Min(x => x.Tier) || c.Concept.Id != previousConceptId)
+                ?? ordered.First();
 
-        if (chosen.LearningState == LearningState.New)
+        if (session.Mode == StudySessionMode.Normal && chosen.LearningState == LearningState.New)
             await progression.MarkPresentedAsync(session.StudentId, chosen.Concept.Id, ct);
 
         var sequence = await db.SessionActivityPresentations.Where(x => x.StudySessionId == session.Id).CountAsync(ct) + 1;

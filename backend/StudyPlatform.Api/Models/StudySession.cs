@@ -9,6 +9,8 @@ public sealed class StudySession
     public Guid StudentId { get; set; }
     public Guid ModuleId { get; set; }
     public StudySessionStatus Status { get; set; } = StudySessionStatus.Active;
+    public StudySessionMode Mode { get; set; } = StudySessionMode.Normal;
+    public Guid? SelectedConceptId { get; set; }
     public DateTime StartedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAtUtc { get; set; }
     public int TotalActivities { get; set; }

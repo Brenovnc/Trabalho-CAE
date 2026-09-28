@@ -36,6 +36,7 @@ public sealed class StudySessionConfiguration : IEntityTypeConfiguration<StudySe
             "\"TotalActivities\" >= 0 AND \"TotalActivities\" <= 10 AND \"CompletedActivities\" >= 0 AND \"CompletedActivities\" <= \"TotalActivities\""));
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+        builder.Property(x => x.Mode).HasConversion<string>().HasMaxLength(24).IsRequired();
         builder.HasIndex(x => new { x.StudentId, x.ModuleId, x.StartedAtUtc });
         builder.HasMany(x => x.Attempts).WithOne(x => x.StudySession).HasForeignKey(x => x.StudySessionId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(x => x.Presentations).WithOne(x => x.StudySession).HasForeignKey(x => x.StudySessionId).OnDelete(DeleteBehavior.Restrict);

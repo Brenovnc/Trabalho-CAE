@@ -24,6 +24,17 @@ public sealed class StudySessionsController(StudySessionService sessions, Studen
     public async Task<ActionResult<StartStudySessionResponse>> Start(Guid moduleId, CancellationToken ct) =>
         Ok(await sessions.StartAsync(StudentId, moduleId, ct));
 
+    [HttpPost("modules/{moduleId:guid}/free-practice/sessions")]
+    public async Task<ActionResult<StartStudySessionResponse>> StartFreePractice(Guid moduleId, StartFreePracticeRequest request, CancellationToken ct) =>
+        Ok(await sessions.StartAsync(StudentId, moduleId, ct, StudyPlatform.Api.Domain.Enums.StudySessionMode.FreePractice, request.ConceptId));
+
+    [HttpPost("modules/{moduleId:guid}/reset-progress")]
+    public async Task<IActionResult> ResetProgress(Guid moduleId, CancellationToken ct)
+    {
+        await sessions.ResetModuleProgressAsync(StudentId, moduleId, ct);
+        return NoContent();
+    }
+
     [HttpGet("sessions/{sessionId:guid}")]
     public async Task<ActionResult<StudySessionResponse>> Get(Guid sessionId, CancellationToken ct) =>
         Ok(await sessions.GetAsync(StudentId, sessionId, ct));

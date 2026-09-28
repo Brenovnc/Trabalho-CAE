@@ -25,8 +25,10 @@ export function ExposureGame({ activity, disabled, onReveal, onSubmit }: Props) 
         })}
       </p>
       <p aria-live="polite">{revealedCount} de {payload.keywordCount} palavras-chave reveladas</p>
-      {!complete && <button type="button" disabled={disabled} onClick={() => void onReveal()}>Revelar próxima palavra</button>}
-      <button type="button" disabled={disabled || !complete} onClick={() => onSubmit({ completed: true })}>Concluir exposição</button>
+      <div className={styles.actions}>
+        {!complete && <button type="button" disabled={disabled} onClick={() => void onReveal()}>Revelar próxima palavra</button>}
+        <button type="button" disabled={disabled || !complete} onClick={() => onSubmit({ completed: true })}>Concluir exposição</button>
+      </div>
     </section>
   )
 }

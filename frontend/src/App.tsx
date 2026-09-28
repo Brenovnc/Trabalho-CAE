@@ -75,9 +75,9 @@ function App() {
   }, [navigate])
 
   if (ready && user?.role === 'STUDENT') {
-    const moduleMatch = /^\/student\/modules\/([^/]+)$/.exec(pathname)
+    const moduleMatch = /^\/student\/modules\/([^/?]+)(?:\?.*)?$/.exec(pathname)
     const sessionMatch = /^\/student\/sessions\/([^/]+)$/.exec(pathname)
-    if (moduleMatch) return <StudentModulePage moduleId={moduleMatch[1]} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
+    if (moduleMatch) return <StudentModulePage moduleId={moduleMatch[1]} startFreePracticeRequested={pathname.includes('practice=free')} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
     if (sessionMatch) return <StudySessionPage sessionId={sessionMatch[1]} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
     if (pathname !== '/student') navigate('/student', true)
     return <StudentModulesPage onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />

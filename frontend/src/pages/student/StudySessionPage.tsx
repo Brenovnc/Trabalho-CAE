@@ -1,7 +1,7 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiRequestError } from '../../services/authApi'
 import { studyApi } from '../../services/studyApi'
-import type { AnswerResponse, StudyActivity, StudySession } from '../../types/learning'
+import type { AnswerResponse, StudentModule, StudyActivity, StudySession } from '../../types/learning'
 import { ActivityGame } from '../../minigames/ActivityGame'
 import { SessionTimer } from '../../components/SessionTimer'
 import styles from './StudySessionPage.module.css'
@@ -11,6 +11,7 @@ type Feedback = { response: AnswerResponse; activity: StudyActivity }
 
 export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthorized }: Props) {
   const [session, setSession] = useState<StudySession | null>(null)
+  const [finalModule, setFinalModule] = useState<StudentModule | null>(null)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -35,6 +36,14 @@ export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthoriz
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [sessionId, onUnauthorized])
+
+  useEffect(() => {
+    if (session?.status !== 'COMPLETED' || session.mode === 'FREE_PRACTICE') return
+    let active = true
+    studyApi.getModule(session.moduleId).then(result => { if (active) setFinalModule(result) })
+      .catch(() => { if (active) setNotice('A sessão foi salva; o resumo atualizado estará disponível ao voltar ao módulo.') })
+    return () => { active = false }
+  }, [session?.status, session?.mode, session?.moduleId])
 
   async function reveal() {
     if (!session?.activity || operationLock.current) return
@@ -112,7 +121,14 @@ export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthoriz
   if (session.status === 'COMPLETED') return <main className={styles.page}>
     <section className={styles.card} aria-labelledby="complete-title"><p className={styles.eyebrow}>Sessão finalizada</p><h1 id="complete-title">Sessão concluída</h1>
       <p>{session.completedActivities} {session.completedActivities === 1 ? 'atividade realizada' : 'atividades realizadas'}.</p>
-      <p>Você pode voltar aos módulos quando quiser.</p><button type="button" onClick={() => onNavigate('/student')}>Voltar aos módulos</button>
+      {session.mode === 'FREE_PRACTICE' ? <p>A prática livre não alterou seu progresso oficial.</p> : finalModule && <section aria-label="Resumo do progresso atualizado">
+        <p>Progresso: {finalModule.progressPercent}%</p>
+        <p>{finalModule.masteredConcepts} conceitos dominados · {finalModule.learningConcepts} em aprendizagem</p>
+        <p>Próxima revisão: {finalModule.nextReviewAtUtc ? reviewLabel(finalModule.nextReviewAtUtc) : 'nenhuma agendada'}</p>
+      </section>}
+      <p>Quer continuar praticando?</p>
+      <button type="button" onClick={() => onNavigate(`/student/modules/${session.moduleId}`)}>Voltar ao módulo</button>
+      <button type="button" onClick={() => onNavigate(`/student/modules/${session.moduleId}?practice=free`)}>Estudar livremente</button>
     </section>
   </main>
   if (session.status === 'ABANDONED') return <main className={styles.page}><section className={styles.card}><h1>Sessão abandonada</h1><p>Suas respostas anteriores continuam salvas.</p><button type="button" onClick={() => onNavigate('/student')}>Voltar aos módulos</button></section></main>
@@ -133,6 +149,15 @@ export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthoriz
       </section> : activity ? <ActivityGame key={activity.presentationId} activity={activity} busy={busy} onReveal={reveal} onSubmit={(answer, hints) => void submit(answer, hints)} /> : <section><h2>Nenhuma atividade elegível</h2><p>Esta sessão terminou sem atividades disponíveis.</p><button type="button" onClick={() => onNavigate('/student')}>Voltar aos módulos</button></section>}
     </section>
   </main>
+}
+
+function reviewLabel(value: string) {
+  const date = new Date(value)
+  const now = new Date()
+  if (date.toDateString() === now.toDateString()) return `hoje às ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(date)}`
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  if (date.toDateString() === tomorrow.toDateString()) return 'amanhã'
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date)
 }
 
 function CorrectAnswer({ activity, answer }: { activity: StudyActivity; answer: unknown }) {

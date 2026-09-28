@@ -75,6 +75,77 @@ public sealed class StudySessionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task FreePracticeIgnoresPrerequisitesAndNeverChangesOfficialStateAndResetPreservesHistory()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var prerequisite = await db.Concepts.SingleAsync(concept => concept.Id == ids.ConceptId);
+        var dependent = new Concept { ModuleId = ids.ModuleId, Name = "Blocked in normal mode", Definition = "Dependent concept." };
+        dependent.Keywords.Add(new ConceptKeyword { Value = "dependent" });
+        db.Concepts.Add(dependent);
+        db.ConceptPrerequisites.Add(new ConceptPrerequisite { Concept = dependent, PrerequisiteConceptId = prerequisite.Id, ModuleId = ids.ModuleId });
+        var classroomId = await db.Students.Where(student => student.Id == ids.StudentId).Select(student => student.ClassroomId).SingleAsync();
+        var teacherId = await db.Modules.Where(module => module.Id == ids.ModuleId).Select(module => module.TeacherId).SingleAsync();
+        var otherStudent = new Student { ClassroomId = classroomId, EnrollmentNumber = $"O{Guid.NewGuid():N}"[..8], IsActive = true, IsActivated = true, PasswordHash = "unused" };
+        var otherModule = new Module { TeacherId = teacherId, Title = "Other module", Subject = "Network", Status = ModuleStatus.Published };
+        var otherConcept = new Concept { Module = otherModule, Name = "Other module concept", Definition = "Still preserved." };
+        db.AddRange(otherStudent, otherModule, new ClassroomModule { ClassroomId = classroomId, Module = otherModule }, otherConcept);
+        await db.SaveChangesAsync();
+        db.StudentConceptStates.AddRange(
+            new StudentConceptState { StudentId = otherStudent.Id, ConceptId = dependent.Id, LearningState = LearningState.Mastered },
+            new StudentConceptState { StudentId = ids.StudentId, ConceptId = otherConcept.Id, LearningState = LearningState.Recognition });
+        var historicalSession = new StudySession { StudentId = ids.StudentId, ModuleId = ids.ModuleId, Status = StudySessionStatus.Completed, CompletedAtUtc = clock.GetUtcNow().UtcDateTime };
+        db.StudySessions.Add(historicalSession);
+        var initial = new StudentConceptState
+        {
+            StudentId = ids.StudentId, Concept = dependent, LearningState = LearningState.GuidedRecall,
+            FreeRecallSuccessCount = 1, LastAttemptAtUtc = clock.GetUtcNow().UtcDateTime.AddDays(-2),
+            LastSuccessAtUtc = clock.GetUtcNow().UtcDateTime.AddDays(-3), LastFailureAtUtc = clock.GetUtcNow().UtcDateTime.AddDays(-4),
+            LastFreeRecallSuccessAtUtc = clock.GetUtcNow().UtcDateTime.AddDays(-5), LastFreeRecallSuccessSessionId = historicalSession.Id,
+            FsrsState = "Review:-", Difficulty = 4.2, Stability = 12.5, DueAtUtc = clock.GetUtcNow().UtcDateTime.AddDays(2),
+            LastReviewAtUtc = clock.GetUtcNow().UtcDateTime.AddDays(-1), ElapsedDays = 1, ScheduledDays = 3, Repetitions = 4, Lapses = 1,
+            LastFsrsRating = FsrsRating.Hard,
+        };
+        db.StudentConceptStates.Add(initial);
+        await db.SaveChangesAsync();
+        var before = StateSnapshot(initial);
+
+        var service = ResolveService(scope.ServiceProvider);
+        var practice = await service.StartAsync(ids.StudentId, ids.ModuleId, default, StudySessionMode.FreePractice, dependent.Id);
+        Assert.Equal("FREE_PRACTICE", practice.Mode);
+        Assert.Equal(dependent.Id, practice.Activity!.ConceptId);
+        Assert.Equal("EXPOSURE", practice.Activity.Type);
+        Assert.Equal("ACTIVE", practice.Status);
+        var current = practice.Activity;
+        await service.RevealNextHintAsync(ids.StudentId, practice.SessionId, current.PresentationId, default);
+        var result = await service.SubmitAsync(ids.StudentId, practice.SessionId, Request(current, "EXPOSURE", new { completed = true }), default);
+        Assert.True(result.WasCorrect);
+        Assert.Equal("FREE_PRACTICE", result.LearningState);
+        Assert.Equal(before, StateSnapshot(await db.StudentConceptStates.SingleAsync(state => state.StudentId == ids.StudentId && state.ConceptId == dependent.Id)));
+        var attempt = await db.ActivityAttempts.SingleAsync();
+        Assert.Null(attempt.FsrsRating);
+        Assert.Equal(StudySessionMode.FreePractice, (await db.StudySessions.SingleAsync(session => session.Id == practice.SessionId)).Mode);
+
+        var activePractice = await service.StartAsync(ids.StudentId, ids.ModuleId, default, StudySessionMode.FreePractice);
+        Assert.Equal("ACTIVE", activePractice.Status);
+        await service.ResetModuleProgressAsync(ids.StudentId, ids.ModuleId, default);
+        Assert.Empty(await db.StudentConceptStates.Where(state => state.StudentId == ids.StudentId && state.Concept.ModuleId == ids.ModuleId).ToListAsync());
+        Assert.Equal(StudySessionStatus.Abandoned, (await db.StudySessions.SingleAsync(session => session.Id == activePractice.SessionId)).Status);
+        Assert.Equal(StudySessionStatus.Completed, (await db.StudySessions.SingleAsync(session => session.Id == historicalSession.Id)).Status);
+        Assert.Single(await db.ActivityAttempts.ToListAsync());
+        Assert.Equal(LearningState.Mastered, (await db.StudentConceptStates.SingleAsync(state => state.StudentId == otherStudent.Id && state.ConceptId == dependent.Id)).LearningState);
+        Assert.Equal(LearningState.Recognition, (await db.StudentConceptStates.SingleAsync(state => state.StudentId == ids.StudentId && state.ConceptId == otherConcept.Id)).LearningState);
+    }
+
+    private static object StateSnapshot(StudentConceptState state) => new
+    {
+        state.LearningState, state.FreeRecallSuccessCount, state.LastAttemptAtUtc, state.LastSuccessAtUtc,
+        state.LastFailureAtUtc, state.LastFreeRecallSuccessAtUtc, state.LastFreeRecallSuccessSessionId,
+        state.FsrsState, state.Difficulty, state.Stability, state.DueAtUtc, state.LastReviewAtUtc,
+        state.ElapsedDays, state.ScheduledDays, state.Repetitions, state.Lapses, state.LastFsrsRating,
+    };
+
+    [Fact]
     public async Task TrueFalseAndFillBlankAreGradedByBackendAndProgressionIsIncremental()
     {
         await using var scope = factory.Services.CreateAsyncScope();
@@ -290,8 +361,13 @@ public sealed class StudySessionTests : IAsyncLifetime
             PostStudentAsync($"/api/student/sessions/{sessionId}/answer", duplicateBody));
         Assert.Contains(duplicateResponses, response => response.StatusCode == HttpStatusCode.OK);
         Assert.Contains(duplicateResponses, response => response.StatusCode == HttpStatusCode.Conflict);
+        using var resetWithoutCsrf = new HttpRequestMessage(HttpMethod.Post, $"/api/student/modules/{ids.ModuleId}/reset-progress") { Content = JsonContent.Create(new { }) };
+        Assert.Equal(HttpStatusCode.BadRequest, (await studentClient.SendAsync(resetWithoutCsrf)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await PostStudentAsync($"/api/student/modules/{ids.ModuleId}/reset-progress", new { })).StatusCode);
         await using var verifyScope = factory.Services.CreateAsyncScope();
-        Assert.Equal(2, await verifyScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().ActivityAttempts.CountAsync());
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        Assert.Equal(2, await verifyDb.ActivityAttempts.CountAsync());
+        Assert.Equal(StudySessionStatus.Abandoned, (await verifyDb.StudySessions.SingleAsync()).Status);
     }
 
     private async Task<SeededIds> SeedAsync(bool addSecondConcept = false, LearningState? state = null, bool includeTF = true, bool includeFill = true, bool includeOrdering = false)

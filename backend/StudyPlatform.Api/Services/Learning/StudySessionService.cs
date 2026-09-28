@@ -21,12 +21,17 @@ public sealed class StudySessionService(
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task<StartStudySessionResponse> StartAsync(Guid studentId, Guid moduleId, CancellationToken ct)
+    public async Task<StartStudySessionResponse> StartAsync(Guid studentId, Guid moduleId, CancellationToken ct,
+        StudySessionMode mode = StudySessionMode.Normal, Guid? selectedConceptId = null)
     {
         await EnsureStudyAccessAsync(studentId, moduleId, ct);
+        if (mode == StudySessionMode.FreePractice && selectedConceptId is not null &&
+            !await db.Concepts.AnyAsync(concept => concept.Id == selectedConceptId && concept.ModuleId == moduleId && concept.IsActive, ct))
+            throw NotFound();
         var existing = await db.StudySessions.SingleOrDefaultAsync(x => x.StudentId == studentId && x.ModuleId == moduleId && x.Status == StudySessionStatus.Active, ct);
         if (existing is not null)
         {
+            if (existing.Mode != mode) throw new ApiException(409, "active_session_mode_mismatch", "Conclua ou abandone a sessão atual antes de iniciar outro modo de estudo.");
             var activity = await GetOrCreateCurrentAsync(existing, ct);
             return MapStart(existing, activity);
         }
@@ -36,6 +41,7 @@ public sealed class StudySessionService(
         existing = await db.StudySessions.SingleOrDefaultAsync(x => x.StudentId == studentId && x.ModuleId == moduleId && x.Status == StudySessionStatus.Active, ct);
         if (existing is not null)
         {
+            if (existing.Mode != mode) throw new ApiException(409, "active_session_mode_mismatch", "Conclua ou abandone a sessão atual antes de iniciar outro modo de estudo.");
             var activity = await db.SessionActivityPresentations.Where(x => x.StudySessionId == existing.Id && x.AnsweredAtUtc == null).OrderByDescending(x => x.SequenceNumber).FirstOrDefaultAsync(ct);
             if (activity is null)
             {
@@ -47,7 +53,7 @@ public sealed class StudySessionService(
             return MapStart(existing, activity);
         }
 
-        var session = new StudySession { StudentId = studentId, ModuleId = moduleId, StartedAtUtc = Now };
+        var session = new StudySession { StudentId = studentId, ModuleId = moduleId, StartedAtUtc = Now, Mode = mode, SelectedConceptId = selectedConceptId };
         db.StudySessions.Add(session);
         await db.SaveChangesAsync(ct);
         var first = await selection.PresentNextAsync(session, ct);
@@ -103,7 +109,8 @@ public sealed class StudySessionService(
         var responseTime = Math.Max(0, (long)(now - presentation.StartedAtUtc).TotalMilliseconds);
         var wasCorrect = Correct(snapshot, presentation, request.Answer);
         var (attemptsUsed, hintsUsed) = GetEffort(snapshot, presentation, request);
-var rating = snapshot.Type == "EXPOSURE" ? (FsrsRating?)null : performanceRatingService.Infer(wasCorrect, attemptsUsed, hintsUsed, responseTime);
+        var rating = session.Mode == StudySessionMode.FreePractice || snapshot.Type == "EXPOSURE"
+            ? (FsrsRating?)null : performanceRatingService.Infer(wasCorrect, attemptsUsed, hintsUsed, responseTime);
 
         var attempt = new ActivityAttempt
         {
@@ -128,14 +135,17 @@ var rating = snapshot.Type == "EXPOSURE" ? (FsrsRating?)null : performanceRating
         };
         db.ActivityAttempts.Add(attempt);
         presentation.AnsweredAtUtc = now;
-        if (snapshot.Type == "EXPOSURE")
-            await progression.CompleteExposureAsync(studentId, presentation.ConceptId, ct);
-        else
-            await progression.RecordAnswerAsync(studentId, presentation.ConceptId, session.Id, wasCorrect, attemptsUsed, hintsUsed, responseTime, ct);
+        if (session.Mode == StudySessionMode.Normal)
+        {
+            if (snapshot.Type == "EXPOSURE")
+                await progression.CompleteExposureAsync(studentId, presentation.ConceptId, ct);
+            else
+                await progression.RecordAnswerAsync(studentId, presentation.ConceptId, session.Id, wasCorrect, attemptsUsed, hintsUsed, responseTime, ct);
+        }
 
         session.CompletedActivities++;
-        var state = await progression.GetStateAsync(studentId, presentation.ConceptId, ct);
-        attempt.FsrsRating = snapshot.Type == "EXPOSURE" ? null : state.LastFsrsRating;
+        var state = session.Mode == StudySessionMode.Normal ? await progression.GetStateAsync(studentId, presentation.ConceptId, ct) : null;
+        attempt.FsrsRating = state?.LastFsrsRating;
         SessionActivityPresentation? next = null;
         if (session.CompletedActivities >= 10)
             Complete(session, Now);
@@ -146,7 +156,7 @@ var rating = snapshot.Type == "EXPOSURE" ? (FsrsRating?)null : performanceRating
         await tx.CommitAsync(ct);
 
         var correctAnswer = BuildCorrectAnswer(snapshot);
-        return new ActivityAnswerResponse(wasCorrect, Feedback(snapshot, wasCorrect), state.LearningState.ToString().ToUpperInvariant(),
+        return new ActivityAnswerResponse(wasCorrect, Feedback(snapshot, wasCorrect), state?.LearningState.ToString().ToUpperInvariant() ?? "FREE_PRACTICE",
             session.CompletedActivities, session.TotalActivities, session.Status.ToString().ToUpperInvariant(),
             next is null ? null : selection.MapPublic(next), correctAnswer);
     }
@@ -160,6 +170,29 @@ var rating = snapshot.Type == "EXPOSURE" ? (FsrsRating?)null : performanceRating
         session.Status = StudySessionStatus.Abandoned;
         session.CompletedAtUtc = Now;
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+    }
+
+    public async Task ResetModuleProgressAsync(Guid studentId, Guid moduleId, CancellationToken ct)
+    {
+        await EnsureStudyAccessAsync(studentId, moduleId, ct);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+        await AcquireStudentModuleLockAsync(studentId, moduleId, ct);
+        var active = await db.StudySessions.SingleOrDefaultAsync(session => session.StudentId == studentId
+            && session.ModuleId == moduleId && session.Status == StudySessionStatus.Active, ct);
+        if (active is not null)
+        {
+            await LockSessionRowAsync(active.Id, ct);
+            await db.Entry(active).ReloadAsync(ct);
+        }
+        if (active is not null && active.Status == StudySessionStatus.Active)
+        {
+            active.Status = StudySessionStatus.Abandoned;
+            active.CompletedAtUtc = Now;
+            await db.SaveChangesAsync(ct);
+        }
+        var conceptIds = db.Concepts.Where(concept => concept.ModuleId == moduleId).Select(concept => concept.Id);
+        await db.StudentConceptStates.Where(state => state.StudentId == studentId && conceptIds.Contains(state.ConceptId)).ExecuteDeleteAsync(ct);
         await tx.CommitAsync(ct);
     }
 private async Task<SessionActivityPresentation?> GetOrCreateCurrentAsync(StudySession session, CancellationToken ct)
@@ -321,12 +354,14 @@ private async Task<SessionActivityPresentation?> GetOrCreateCurrentAsync(StudySe
     }
 
     private StudySessionResponse MapSession(StudySession session, SessionActivityPresentation? activity) =>
-        new(session.Id, session.Status.ToString().ToUpperInvariant(), session.TotalActivities, session.CompletedActivities,
-            session.StartedAtUtc, session.CompletedAtUtc, activity is null ? null : selection.MapPublic(activity));
+        new(session.Id, session.ModuleId, session.Status.ToString().ToUpperInvariant(), session.TotalActivities, session.CompletedActivities,
+            session.StartedAtUtc, session.CompletedAtUtc, activity is null ? null : selection.MapPublic(activity), ModeName(session.Mode));
 
     private StartStudySessionResponse MapStart(StudySession session, SessionActivityPresentation? activity) =>
-        new(session.Id, session.Status.ToString().ToUpperInvariant(), session.TotalActivities, session.CompletedActivities,
-            activity is null ? null : selection.MapPublic(activity));
+        new(session.Id, session.ModuleId, session.Status.ToString().ToUpperInvariant(), session.TotalActivities, session.CompletedActivities,
+            activity is null ? null : selection.MapPublic(activity), ModeName(session.Mode));
+
+    private static string ModeName(StudySessionMode mode) => mode == StudySessionMode.FreePractice ? "FREE_PRACTICE" : "NORMAL";
 
     private static void Complete(StudySession session, DateTime now)
     {

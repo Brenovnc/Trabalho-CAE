@@ -236,7 +236,7 @@ export function ModulesPage() {
               {selected.concepts.length === 0 ? <p className={styles.muted}>Adicione conceitos para compor o módulo.</p> : (
                 <ul className={styles.conceptList}>{selected.concepts.map(concept => (
                   <li key={concept.id} className={!concept.isActive ? styles.inactive : ''}>
-                    <button type="button" className={styles.moduleLink} onClick={() => setConceptDraft(draftFromConcept(concept))}>
+                    <button type="button" className={`${styles.moduleLink} ${conceptDraft.id === concept.id ? styles.selectedConcept : ''}`} onClick={() => setConceptDraft(draftFromConcept(concept))} aria-pressed={conceptDraft.id === concept.id}>
                       <span><strong>{concept.name}</strong><small>{concept.isActive ? `${concept.keywords.length} keywords · ${concept.clues.length}/3 pistas · ${statusCount(concept.recognitionActivities)}/3 verdadeiro/falso · ${statusCount(concept.fillBlankActivities)}/3 lacunas` : 'Desativado'}</small></span>
                     </button>
                   </li>
@@ -274,16 +274,24 @@ function ConceptEditor({ module, value, onChange, onSubmit, onDuplicate, onDeact
       <button type="button" className={styles.danger} disabled={busy} onClick={onDeactivate}>Desativar</button>
     </div>}</div>
     <form onSubmit={onSubmit} className={styles.conceptForm}>
+      <details className={styles.editorSection} open><summary>Informa&#231;&#245;es b&#225;sicas</summary>
       <label>Nome<input required maxLength={160} value={value.name} onChange={event => patch('name', event.target.value)} /></label>
       <label>Definição<textarea required maxLength={12000} rows={4} value={value.definition} onChange={event => patch('definition', event.target.value)} /></label>
+      </details>
+      <details className={styles.editorSection}><summary>Keywords &#8212; {lines(value.keywords).length}</summary>
       <label>Keywords <small>Uma por linha</small><textarea rows={3} value={value.keywords} onChange={event => patch('keywords', event.target.value)} /></label>
+      </details>
+      <details className={styles.editorSection}><summary>Pistas &#8212; {lines(value.clues).length}/3 {lines(value.clues).length >= 3 ? '\u2713 completo' : '\u26A0 incompleto'}</summary>
       <label>Pistas na ordem desejada <small>Uma por linha; são necessárias 3 para publicar</small><textarea rows={4} value={value.clues} onChange={event => patch('clues', event.target.value)} /></label>
-      <fieldset><legend>Pré-requisitos</legend>
+      </details>
+      <details className={styles.editorSection}><summary>Pr&#233;-requisitos &#8212; {value.prerequisiteIds.length}</summary>
+
         {activeConcepts.length === 0 ? <p className={styles.muted}>Nenhum outro conceito disponível.</p> : activeConcepts.map(concept => (
           <label className={styles.check} key={concept.id}><input type="checkbox" checked={value.prerequisiteIds.includes(concept.id)} onChange={event => patch('prerequisiteIds', event.target.checked ? [...value.prerequisiteIds, concept.id] : value.prerequisiteIds.filter(id => id !== concept.id))} />{concept.name}</label>
         ))}
-      </fieldset>
-      <fieldset><legend>Verdadeiro/falso ({value.recognitionActivities.length}/3 mínimos)</legend>
+      </details>
+      <details className={styles.editorSection}><summary>Verdadeiro/Falso &#8212; {value.recognitionActivities.length}/3 {value.recognitionActivities.length >= 3 ? '\u2713 completo' : '\u26A0 incompleto'}</summary>
+
         {value.recognitionActivities.map((activity, index) => <div className={styles.activity} key={activity.id ?? `tf-${index}`}>
           <label>Afirmação<input required value={activity.statement} onChange={event => patch('recognitionActivities', value.recognitionActivities.map((item, i) => i === index ? { ...item, statement: event.target.value } : item))} /></label>
           <label>Explicação<input required value={activity.explanation} onChange={event => patch('recognitionActivities', value.recognitionActivities.map((item, i) => i === index ? { ...item, explanation: event.target.value } : item))} /></label>
@@ -291,8 +299,9 @@ function ConceptEditor({ module, value, onChange, onSubmit, onDuplicate, onDeact
           <button type="button" className={styles.textButton} onClick={() => patch('recognitionActivities', value.recognitionActivities.filter((_, i) => i !== index))}>Remover atividade</button>
         </div>)}
         <button type="button" className={styles.secondary} onClick={() => patch('recognitionActivities', [...value.recognitionActivities, { statement: '', isCorrect: false, explanation: '' }])}>+ Atividade verdadeiro/falso</button>
-      </fieldset>
-      <fieldset><legend>Lacunas ({value.fillBlankActivities.length}/3 mínimos)</legend>
+      </details>
+      <details className={styles.editorSection}><summary>Completar lacunas &#8212; {value.fillBlankActivities.length}/3 {value.fillBlankActivities.length >= 3 ? '\u2713 completo' : '\u26A0 incompleto'}</summary>
+
         <p className={styles.muted}>Marque os slots no texto como {'{{1}}'} e informe respostas como <code>1:DNS</code>, uma por linha.</p>
         {value.fillBlankActivities.map((activity, index) => <div className={styles.activity} key={activity.id ?? `fill-${index}`}>
           <label>Texto com slots<textarea required rows={2} value={activity.text} onChange={event => patch('fillBlankActivities', value.fillBlankActivities.map((item, i) => i === index ? { ...item, text: event.target.value } : item))} /></label>
@@ -301,15 +310,16 @@ function ConceptEditor({ module, value, onChange, onSubmit, onDuplicate, onDeact
           <button type="button" className={styles.textButton} onClick={() => patch('fillBlankActivities', value.fillBlankActivities.filter((_, i) => i !== index))}>Remover atividade</button>
         </div>)}
         <button type="button" className={styles.secondary} onClick={() => patch('fillBlankActivities', [...value.fillBlankActivities, { text: '', answers: '', distractors: '' }])}>+ Atividade de lacunas</button>
-      </fieldset>
-      <fieldset><legend>Ordenação (opcional)</legend>
+      </details>
+      <details className={styles.editorSection}><summary>Ordena&#231;&#227;o &#8212; opcional</summary>
+
         {value.orderingActivities.map((activity, index) => <div className={styles.activity} key={activity.id ?? `order-${index}`}>
           <label>Instrução<input required value={activity.instruction} onChange={event => patch('orderingActivities', value.orderingActivities.map((item, i) => i === index ? { ...item, instruction: event.target.value } : item))} /></label>
           <label>Itens na ordem correta <small>Um por linha</small><textarea required rows={3} value={activity.items} onChange={event => patch('orderingActivities', value.orderingActivities.map((item, i) => i === index ? { ...item, items: event.target.value } : item))} /></label>
           <button type="button" className={styles.textButton} onClick={() => patch('orderingActivities', value.orderingActivities.filter((_, i) => i !== index))}>Remover atividade</button>
         </div>)}
         <button type="button" className={styles.secondary} onClick={() => patch('orderingActivities', [...value.orderingActivities, { instruction: '', items: '' }])}>+ Atividade de ordenação</button>
-      </fieldset>
+      </details>
       <div className={styles.formActions}><button disabled={busy} type="submit">{value.id ? 'Salvar conceito' : 'Adicionar conceito'}</button><button type="button" className={styles.secondary} onClick={() => onChange(blankConcept())}>Limpar formulário</button></div>
     </form>
   </section>

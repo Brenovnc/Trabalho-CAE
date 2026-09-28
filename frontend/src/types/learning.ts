@@ -4,6 +4,15 @@
   description: string | null
   subject: string
   activeSessionId: string | null
+  activeConcepts: number
+  masteredConcepts: number
+  learningConcepts: number
+  notStartedConcepts: number
+  pendingReviews: number
+  progressPercent: number
+  nextReviewAtUtc: string | null
+  activeSessionMode: 'NORMAL' | 'FREE_PRACTICE' | null
+  concepts: { id: string; name: string }[]
 }
 
 export type ExposureSegment = { text: string | null; keywordIndex: number | null }
@@ -56,6 +65,8 @@ export type StudyActivity = ExposureActivity | TrueFalseActivity | FillBlankActi
 
 export type StudySession = {
   sessionId: string
+  moduleId: string
+  mode: 'NORMAL' | 'FREE_PRACTICE'
   status: 'ACTIVE' | 'COMPLETED' | 'ABANDONED'
   totalActivities: number
   completedActivities: number

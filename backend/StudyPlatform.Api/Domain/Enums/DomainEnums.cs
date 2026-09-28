@@ -30,6 +30,12 @@ public enum StudySessionStatus
     Abandoned,
 }
 
+public enum StudySessionMode
+{
+    Normal,
+    FreePractice,
+}
+
 public enum ActivityType
 {
     Exposure,

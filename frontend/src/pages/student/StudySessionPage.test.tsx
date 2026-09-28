@@ -6,7 +6,7 @@ import { ApiRequestError } from '../../services/authApi'
 import type { StudyActivity, StudySession } from '../../types/learning'
 import { StudySessionPage } from './StudySessionPage'
 
-const studyMocks = vi.hoisted(() => ({ getSession: vi.fn(), reveal: vi.fn(), submit: vi.fn(), abandon: vi.fn() }))
+const studyMocks = vi.hoisted(() => ({ getModule: vi.fn(), getSession: vi.fn(), reveal: vi.fn(), submit: vi.fn(), abandon: vi.fn() }))
 vi.mock('../../services/studyApi', () => ({ studyApi: studyMocks }))
 
 const baseActivity: StudyActivity = {
@@ -14,12 +14,12 @@ const baseActivity: StudyActivity = {
   type: 'TRUE_FALSE', payload: { statement: 'DNS resolves names.' },
 }
 const activeSession: StudySession = {
-  sessionId: 's1', status: 'ACTIVE', totalActivities: 1, completedActivities: 0,
+  sessionId: 's1', moduleId: 'm1', mode: 'NORMAL', status: 'ACTIVE', totalActivities: 1, completedActivities: 0,
   startedAtUtc: '2026-09-27T12:00:00Z', completedAtUtc: null, activity: baseActivity,
 }
 const props = { sessionId: 's1', onNavigate: vi.fn(), onLogout: vi.fn(), onUnauthorized: vi.fn() }
 
-beforeEach(() => { vi.clearAllMocks() })
+beforeEach(() => { vi.clearAllMocks(); studyMocks.getModule.mockResolvedValue(null) })
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 describe('student session page', () => {
@@ -82,6 +82,9 @@ describe('student session page', () => {
   it('shows a short session summary only after Continue acknowledges completion', async () => {
     const user = userEvent.setup()
     studyMocks.getSession.mockResolvedValue(activeSession)
+    studyMocks.getModule.mockResolvedValue({ id: 'm1', title: 'Redes', description: null, subject: 'Redes', activeSessionId: null,
+      activeConcepts: 1, masteredConcepts: 0, learningConcepts: 1, notStartedConcepts: 0, pendingReviews: 1,
+      progressPercent: 0, nextReviewAtUtc: null, activeSessionMode: null, concepts: [] })
     studyMocks.submit.mockResolvedValue({
       wasCorrect: false, feedback: 'Incorrect.', learningState: 'RECOGNITION', completedActivities: 1,
       totalActivities: 1, sessionStatus: 'COMPLETED', nextActivity: null,
@@ -94,6 +97,9 @@ describe('student session page', () => {
     await user.click(screen.getByRole('button', { name: 'Ver resumo' }))
     expect(await screen.findByText('Sessão concluída')).toBeTruthy()
     expect(screen.getByText('1 atividade realizada.')).toBeTruthy()
+    expect(await screen.findByText('Progresso: 0%')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Estudar livremente' }))
+    expect(props.onNavigate).toHaveBeenCalledWith('/student/modules/m1?practice=free')
   })
 })
 

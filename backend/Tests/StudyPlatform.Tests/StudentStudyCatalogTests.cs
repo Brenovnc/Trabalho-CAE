@@ -66,6 +66,51 @@ public sealed class StudentStudyCatalogTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ModuleSummaryUsesActiveConceptsAndReturnsProgressReviewCountsAndNextDueTime()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var module = await db.Modules.SingleAsync(item => item.Id == moduleId);
+        var now = DateTime.UtcNow;
+        var concepts = Enumerable.Range(2, 10).Select(index => new Concept
+        {
+            Module = module, Name = $"Concept {index}", Definition = "Definition",
+            IsActive = index != 11,
+        }).ToArray();
+        db.Concepts.AddRange(concepts);
+        await db.SaveChangesAsync();
+        var active = await db.Concepts.Where(concept => concept.ModuleId == moduleId && concept.IsActive).OrderBy(concept => concept.Name).ToListAsync();
+        var stateDefinitions = new (LearningState State, DateTime? Due)[]
+        {
+            (LearningState.Mastered, now.AddHours(3)), (LearningState.Mastered, null), (LearningState.Mastered, null),
+            (LearningState.Exposure, now.AddDays(-1)), (LearningState.Recognition, now.AddHours(2)),
+            (LearningState.GuidedRecall, null), (LearningState.FreeRecall, now.AddDays(-2)), (LearningState.New, null),
+        };
+        for (var index = 0; index < stateDefinitions.Length; index++)
+            db.StudentConceptStates.Add(new StudentConceptState
+            {
+                StudentId = studentId, ConceptId = active[index].Id,
+                LearningState = stateDefinitions[index].State, DueAtUtc = stateDefinitions[index].Due,
+            });
+        await db.SaveChangesAsync();
+
+        var response = await new StudentStudyCatalogService(db).GetModuleAsync(studentId, moduleId, default);
+        Assert.Equal(10, response.ActiveConcepts);
+        Assert.Equal(3, response.MasteredConcepts);
+        Assert.Equal(4, response.LearningConcepts);
+        Assert.Equal(3, response.NotStartedConcepts);
+        Assert.Equal(30, response.ProgressPercent);
+        Assert.Equal(2, response.PendingReviews);
+        Assert.InRange(response.NextReviewAtUtc!.Value, now.AddHours(1).AddMinutes(-2), now.AddHours(2).AddMinutes(2));
+        Assert.DoesNotContain(response.Concepts!, item => item.Name == "Concept 11");
+
+        var student = await db.Students.SingleAsync(item => item.Id == studentId);
+        student.IsActive = false;
+        await db.SaveChangesAsync();
+        await Assert.ThrowsAsync<StudyPlatform.Api.Exceptions.ApiException>(() => new StudentStudyCatalogService(db).GetModuleAsync(studentId, moduleId, default));
+    }
+
+    [Fact]
     public async Task ExposurePayloadDoesNotRevealKeywordsBeforeBackendRevealAndRetainsPresentationTime()
     {
         await using var scope = factory.Services.CreateAsyncScope();
