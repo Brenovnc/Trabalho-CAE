@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudyPlatform.Api.DTOs.Auth;
@@ -10,8 +10,16 @@ namespace StudyPlatform.Api.Controllers;
 [ApiController]
 [Authorize(Policy = AuthPolicies.Student)]
 [Route("api/student")]
-public sealed class StudySessionsController(StudySessionService sessions) : ControllerBase
+public sealed class StudySessionsController(StudySessionService sessions, StudentStudyCatalogService catalog) : ControllerBase
 {
+    [HttpGet("modules")]
+    public async Task<ActionResult<IReadOnlyList<StudentModuleResponse>>> ListModules(CancellationToken ct) =>
+        Ok(await catalog.ListModulesAsync(StudentId, ct));
+
+    [HttpGet("modules/{moduleId:guid}")]
+    public async Task<ActionResult<StudentModuleResponse>> GetModule(Guid moduleId, CancellationToken ct) =>
+        Ok(await catalog.GetModuleAsync(StudentId, moduleId, ct));
+
     [HttpPost("modules/{moduleId:guid}/sessions")]
     public async Task<ActionResult<StartStudySessionResponse>> Start(Guid moduleId, CancellationToken ct) =>
         Ok(await sessions.StartAsync(StudentId, moduleId, ct));

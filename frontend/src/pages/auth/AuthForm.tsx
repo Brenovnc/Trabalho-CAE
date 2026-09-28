@@ -1,10 +1,11 @@
-﻿import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import type { AuthMode } from '../../types/auth'
 import styles from './AuthForm.module.css'
 
 type Props = {
   onSubmit: (mode: AuthMode, fields: Record<string, string>) => Promise<void>
   disabled?: boolean
+  initialMode?: AuthMode
 }
 
 type Field = {
@@ -60,8 +61,8 @@ const modes: { id: AuthMode; label: string }[] = [
   { id: 'student-activate', label: 'Aluno: primeiro acesso' },
 ]
 
-export function AuthForm({ onSubmit, disabled = false }: Props) {
-  const [mode, setMode] = useState<AuthMode>('teacher-login')
+export function AuthForm({ onSubmit, disabled = false, initialMode = 'teacher-login' }: Props) {
+  const [mode, setMode] = useState<AuthMode>(initialMode)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const form = forms[mode]

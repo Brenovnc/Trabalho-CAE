@@ -1,0 +1,4 @@
+﻿.definition { font-size: 1.2rem; line-height: 2.4; overflow-wrap: anywhere; }
+.hidden, .hiddenText { display: inline-block; min-width: 4.5rem; margin: 0 .2rem; border: 1px dashed #aab2ff; border-radius: .4rem; padding: .15rem .5rem; color: #fff; background: #242d43; text-align: center; }
+.hidden { cursor: pointer; }
+.revealed { border-radius: .25rem; padding: 0 .2rem; color: #fff; background: #42503c; }

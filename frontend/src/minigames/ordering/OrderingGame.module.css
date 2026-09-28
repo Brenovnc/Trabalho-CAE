@@ -1,0 +1,4 @@
+﻿.items { display: grid; gap: .6rem; padding-left: 1.8rem; }
+.items li { display: flex; align-items: center; justify-content: space-between; gap: .75rem; border: 1px solid #39445a; border-radius: .5rem; padding: .65rem; background: #191e29; }
+.controls { display: flex; gap: .4rem; }
+.controls button { min-width: 2.75rem; min-height: 2.75rem; }

@@ -47,6 +47,7 @@ builder.Services.AddScoped<ActivityCompatibilityService>();
 // Stage 10 session services
 builder.Services.AddScoped<ActivitySelectionService>();
 builder.Services.AddScoped<StudySessionService>();
+builder.Services.AddScoped<StudentStudyCatalogService>();
 builder.Services.AddScoped<IPasswordHasher<Teacher>, PasswordHasher<Teacher>>();
 builder.Services.AddScoped<IPasswordHasher<Student>, PasswordHasher<Student>>();
 builder.Services.AddScoped<ApiCookieAuthenticationEvents>();

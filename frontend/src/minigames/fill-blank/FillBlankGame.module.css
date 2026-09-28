@@ -1,0 +1,4 @@
+﻿.sentence { font-size: 1.15rem; line-height: 2.8; }
+.slot { min-width: 8rem; margin: 0 .25rem; border: 1px dashed #9ca8ff; border-radius: .4rem; padding: .45rem; color: #fff; background: #20283b; cursor: pointer; }
+.options, .removeList { display: flex; flex-wrap: wrap; gap: .6rem; padding: 0; list-style: none; }
+.options button, .removeList button { min-height: 2.75rem; padding: .55rem .8rem; }

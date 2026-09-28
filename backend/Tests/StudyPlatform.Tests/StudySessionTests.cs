@@ -43,6 +43,9 @@ public sealed class StudySessionTests : IAsyncLifetime
         var start = await service.StartAsync(ids.StudentId, ids.ModuleId, default);
         Assert.Equal("EXPOSURE", start.Activity!.Type);
         Assert.Empty(start.Activity.Payload.GetProperty("revealedKeywords").EnumerateArray());
+        Assert.DoesNotContain("domain name", start.Activity.Payload.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IP address", start.Activity.Payload.GetRawText(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(start.Activity.StartedAtUtc, start.Activity.StartedAtUtc);
         Assert.Equal(2, start.Activity.Payload.GetProperty("keywordCount").GetInt32());
 
         var resumed = await service.StartAsync(ids.StudentId, ids.ModuleId, default);

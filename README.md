@@ -193,3 +193,9 @@ O backend disponibiliza sessões apenas para alunos ativos e autenticados, com t
 A seleção é incremental: cada resposta persiste tentativa e progressão antes de selecionar a seguinte. `TotalActivities` conta apresentações entregues até aquele momento (incluindo a atual); a sessão termina ao atingir 10 ou quando não há outra atividade compatível e ainda não usada. O serviço prioriza revisões vencidas, erros recentes (janela de 14 dias), conceitos em andamento e conceitos novos elegíveis; desempates usam estado/tipo principal e IDs estáveis. Não há repetição de um mesmo cartão na sessão.
 
 Uma apresentação persistida guarda o snapshot privado usado para correção e a API projeta somente os campos públicos. A tentativa aponta para essa apresentação por uma referência única; locks transacionais do PostgreSQL serializam respostas concorrentes. Respostas repetidas recebem conflito HTTP 409 e não avançam o estado novamente. Todas as mutações exigem o token CSRF existente (`X-CSRF-TOKEN`). Os testes usam exclusivamente `trabalho_cae_learning_test`.
+
+## Área de estudo do aluno
+
+Após entrar como aluno, a área `/student` lista somente módulos publicados associados à turma do aluno. Cada módulo mostra título, disciplina e descrição; o resumo permite iniciar ou retomar uma sessão ativa. As rotas usadas são `/student`, `/student/modules/:moduleId` e `/student/sessions/:sessionId`.
+
+A sessão usa a atividade e o timestamp retornados pela API. Os cinco minigames ficam isolados em `frontend/src/minigames/`; a API corrige respostas e persiste revelações. Para testar uma sessão, ative um aluno, associe à turma um módulo publicado com conceitos e atividades válidas, entre como aluno e escolha o módulo. Os jogos exibidos seguem a elegibilidade pedagógica, portanto nem todos precisam aparecer na mesma sessão.

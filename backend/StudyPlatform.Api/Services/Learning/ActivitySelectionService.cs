@@ -124,8 +124,10 @@ public sealed class ActivitySelectionService(
             ?? throw new InvalidOperationException("Saved activity snapshot is invalid.");
         object payload = snapshot.Type switch
         {
-            "EXPOSURE" => new { definition = snapshot.Definition, keywordCount = snapshot.Keywords?.Count ?? 0,
-                revealedKeywords = (snapshot.Keywords ?? []).Take(presentation.RevealedClueCount).Select(x => x.Value).ToArray() },
+            "EXPOSURE" => new { keywordCount = snapshot.Keywords?.Count ?? 0,
+                revealedCount = presentation.RevealedClueCount,
+                revealedKeywords = (snapshot.Keywords ?? []).Take(presentation.RevealedClueCount).Select(x => x.Value).ToArray(),
+                segments = BuildExposureSegments(snapshot.Definition ?? string.Empty, snapshot.Keywords ?? [], presentation.RevealedClueCount) },
             "TRUE_FALSE" => new { statement = snapshot.Statement },
             "FILL_BLANK" => new { text = snapshot.Text, slotNumbers = (snapshot.Slots ?? []).Select(x => x.SlotNumber).ToArray(),
                 options = (snapshot.Options ?? []).Select(x => x.Text).ToArray() },
@@ -135,9 +137,55 @@ public sealed class ActivitySelectionService(
             _ => throw new InvalidOperationException("Unknown saved activity type."),
         };
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(payload, JsonOptions));
-        return new PresentedActivityResponse(presentation.Id, snapshot.Type, snapshot.ConceptId, document.RootElement.Clone());
+        return new PresentedActivityResponse(presentation.Id, snapshot.Type, presentation.ConceptId, snapshot.ConceptName, presentation.StartedAtUtc, document.RootElement.Clone());
     }
 
+
+    private static IReadOnlyList<ExposureSegment> BuildExposureSegments(string definition, IReadOnlyList<SnapshotKeyword> keywords, int revealedCount)
+    {
+        var matches = new List<(int Start, int End, int KeywordIndex)>();
+        for (var keywordIndex = 0; keywordIndex < keywords.Count; keywordIndex++)
+        {
+            var keyword = keywords[keywordIndex].Value;
+            if (string.IsNullOrWhiteSpace(keyword)) continue;
+            var searchFrom = 0;
+            while (searchFrom < definition.Length)
+            {
+                var start = definition.IndexOf(keyword, searchFrom, StringComparison.OrdinalIgnoreCase);
+                if (start < 0) break;
+                matches.Add((start, start + keyword.Length, keywordIndex));
+                searchFrom = start + keyword.Length;
+            }
+        }
+
+        matches = matches.OrderBy(match => match.Start)
+            .ThenByDescending(match => match.End - match.Start)
+            .ThenBy(match => match.KeywordIndex)
+            .ToList();
+        var segments = new List<ExposureSegment>();
+        var representedKeywords = new HashSet<int>();
+        var cursor = 0;
+        foreach (var match in matches)
+        {
+            if (match.Start < cursor) continue;
+            if (match.Start > cursor) segments.Add(new ExposureSegment(definition[cursor..match.Start], null));
+            representedKeywords.Add(match.KeywordIndex);
+            segments.Add(new ExposureSegment(
+                match.KeywordIndex < revealedCount ? keywords[match.KeywordIndex].Value : null,
+                match.KeywordIndex));
+            cursor = match.End;
+        }
+        if (cursor < definition.Length) segments.Add(new ExposureSegment(definition[cursor..], null));
+
+        for (var index = 0; index < keywords.Count; index++)
+        {
+            if (representedKeywords.Contains(index)) continue;
+            segments.Add(new ExposureSegment(index < revealedCount ? keywords[index].Value : null, index));
+        }
+        return segments;
+    }
+
+    private sealed record ExposureSegment(string? Text, int? KeywordIndex);
     internal ActivitySnapshot ReadSnapshot(SessionActivityPresentation presentation) =>
         JsonSerializer.Deserialize<ActivitySnapshot>(presentation.SnapshotJson, JsonOptions)
         ?? throw new InvalidOperationException("Saved activity snapshot is invalid.");

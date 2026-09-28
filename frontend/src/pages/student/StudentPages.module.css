@@ -1,0 +1,11 @@
+﻿.page { width: min(100% - 2rem, 68rem); margin: 0 auto; padding: 1.5rem 0 3rem; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+.header h1 { margin: .2rem 0; }
+.eyebrow, .subject { margin: 0; color: #aab2ff; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.moduleGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }
+.card { border: 1px solid #343e52; border-radius: .9rem; padding: clamp(1rem, 3vw, 1.5rem); background: #191e29; overflow-wrap: anywhere; }
+.card h2 { margin: .5rem 0; }
+.page button { min-height: 2.75rem; border: 1px solid #5d6a88; border-radius: .55rem; padding: .6rem .9rem; color: #f5f6ff; background: #303a52; cursor: pointer; }
+.page button:disabled { opacity: .65; cursor: wait; }
+.page button:focus-visible { outline: 3px solid #b6beff; outline-offset: 2px; }
+@media (max-width: 480px) { .page { width: min(100% - 1.25rem, 68rem); } .header { align-items: flex-start; } }
