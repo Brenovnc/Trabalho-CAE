@@ -7,6 +7,12 @@ import styles from './ClassroomsPage.module.css'
 type Props = { onProgress: (classroomId: string) => void }
 const messageOf = (error: unknown) => error instanceof Error ? error.message : 'Não foi possível concluir a operação.'
 
+function classroomStatusLabel(status: string) {
+  const normalized = status.toLowerCase()
+  if (normalized === 'active') return 'Ativa'
+  if (normalized === 'archived') return 'Arquivada'
+  return status
+}
 export function ClassroomsPage({ onProgress }: Props) {
   const [items, setItems] = useState<ClassroomSummary[]>([])
   const [modules, setModules] = useState<ModuleSummary[]>([])
@@ -82,7 +88,7 @@ export function ClassroomsPage({ onProgress }: Props) {
     {credentials && <section className={styles.oneTime}><h2>Código temporário — mostrar uma única vez</h2><p>Matrícula: {credentials.enrollmentNumber}{credentials.name ? ` · ${credentials.name}` : ''}</p><code>{credentials.temporaryAccessCode}</code><p>Expira em {new Date(credentials.expiresAtUtc).toLocaleString()}</p><button type="button" onClick={() => void copyCode()}>Copiar código</button><button type="button" onClick={() => setCredentials(null)}>Fechar</button></section>}
     {!selected ? <div className={styles.columns}>
       <form className={styles.panel} onSubmit={saveClassroom}><h2>Nova turma</h2><label>Nome<input required maxLength={160} value={name} onChange={e => setName(e.target.value)} /></label><label>Código<input required minLength={3} maxLength={32} pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*" title="Use letras, números e hífens entre grupos" value={code} onChange={e => setCode(e.target.value)} /></label><button disabled={busy}>Criar turma</button></form>
-      <section className={styles.panel}><h2>Minhas turmas</h2>{loading ? <p role="status">Carregando turmas...</p> : items.length ? <ul>{items.map(x => <li key={x.id}><button className={styles.link} type="button" onClick={() => { setCredentials(null); void open(x.id) }}><strong>{x.name}</strong><span>{x.code} · {x.studentCount} alunos · {x.moduleCount} módulos · {x.status}</span></button></li>)}</ul> : <p>Nenhuma turma cadastrada.</p>}</section>
+      <section className={styles.panel}><h2>Minhas turmas</h2>{loading ? <p className={styles.muted} role="status">Carregando turmas...</p> : items.length ? <ul className={styles.classroomList}>{items.map(x => <li className={styles.classroomRow} data-archived={x.status.toLowerCase() === 'archived'} key={x.id}><button className={styles.classroomLink} type="button" onClick={() => { setCredentials(null); void open(x.id) }}><span><strong>{x.name}</strong><small>{x.code} · {x.studentCount} {x.studentCount === 1 ? 'aluno' : 'alunos'} · {x.moduleCount} {x.moduleCount === 1 ? 'módulo' : 'módulos'}</small></span><span className={styles.status}>{classroomStatusLabel(x.status)}</span></button></li>)}</ul> : <p className={styles.muted}>Nenhuma turma cadastrada.</p>}</section>
     </div> : <>
       <button type="button" onClick={() => { setSelected(null); setCredentials(null); setNotice('') }}>← Minhas turmas</button>
       <button type="button" onClick={() => onProgress(selected.id)}>Ver no dashboard</button>
