@@ -14,6 +14,9 @@ export function StudentModulePage({ moduleId, startFreePracticeRequested = false
   const [freeChoiceOpen, setFreeChoiceOpen] = useState(false)
   const [selectedConcept, setSelectedConcept] = useState('')
   const [confirmReset, setConfirmReset] = useState(false)
+  const [advanceBusy, setAdvanceBusy] = useState(false)
+  const [advanceNotice, setAdvanceNotice] = useState('')
+  const [allWords, setAllWords] = useState(false)
   const startLock = useRef(false)
   const resetLock = useRef(false)
   const resetCancelRef = useRef<HTMLButtonElement>(null)
@@ -65,6 +68,21 @@ export function StudentModulePage({ moduleId, startFreePracticeRequested = false
     } finally { resetLock.current = false; setBusy(false) }
   }
 
+  async function advanceReview() {
+    if (advanceBusy || !module) return
+    setAdvanceBusy(true); setError(''); setAdvanceNotice('')
+    try {
+      const updated = await studyApi.advanceReview(moduleId)
+      setModule(updated)
+      setAdvanceNotice(updated.advanceReviewPerformed === false
+        ? 'Não havia revisões futuras para antecipar.'
+        : 'Próximas revisões antecipadas; elas agora estão pendentes.')
+    } catch (cause) {
+      if (cause instanceof ApiRequestError && cause.status === 401) onUnauthorized()
+      else setError(errorMessage(cause))
+    } finally { setAdvanceBusy(false) }
+  }
+
   const dateText = module?.nextReviewAtUtc ? formatReviewDate(module.nextReviewAtUtc) : null
   const activeSessionPath = module?.activeSessionId ? `/student/sessions/${module.activeSessionId}` : null
   const hasNormalSession = module?.activeSessionMode === 'NORMAL'
@@ -101,6 +119,11 @@ export function StudentModulePage({ moduleId, startFreePracticeRequested = false
             {busy ? 'Abrindo sessão…' : 'Iniciar estudo'}
           </button>}
         </div>
+        {module.allowAdvanceReview && !activeSessionPath && module.nextReviewAtUtc && new Date(module.nextReviewAtUtc).getTime() > Date.now() && <div className={styles.advanceReview}>
+          <p>Sua próxima revisão está agendada para {formatReviewDate(module.nextReviewAtUtc)}. Você pode antecipá-la.</p>
+          <button type="button" disabled={advanceBusy || busy} onClick={() => void advanceReview()}>{advanceBusy ? 'Antecipando…' : 'Adiantar próxima sessão'}</button>
+        </div>}
+        {advanceNotice && <p className={styles.notice} role="status" aria-live="polite">{advanceNotice}</p>}
       </section>
 
       <section className={styles.card} aria-labelledby="free-practice-title">
@@ -126,6 +149,16 @@ export function StudentModulePage({ moduleId, startFreePracticeRequested = false
           </div>}
         </>}
       </section>
+
+      {module.crosswordEnabled && <section className={styles.card} aria-labelledby="crossword-title">
+        <h2 id="crossword-title">Cruzadinha</h2>
+        <p>Um método alternativo de estudos para se divertir</p>
+        {module.crosswordAllowAllWords && <label className={styles.switchControl}>
+          <input type="checkbox" role="switch" checked={allWords} onChange={event => setAllWords(event.target.checked)} />
+          Habilitar todas as palavras do módulo?
+        </label>}
+        <button type="button" onClick={() => onNavigate(`/student/modules/${moduleId}/crossword?allWords=${allWords}`)}>Começar</button>
+      </section>}
 
       <section className={styles.dangerZone} aria-labelledby="reset-title">
         <h2 id="reset-title">Reiniciar módulo</h2>

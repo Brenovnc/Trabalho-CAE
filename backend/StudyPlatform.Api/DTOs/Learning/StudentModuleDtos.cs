@@ -14,6 +14,10 @@ public sealed record StudentModuleResponse(
     int ProgressPercent = 0,
     DateTime? NextReviewAtUtc = null,
     string? ActiveSessionMode = null,
-    IReadOnlyList<StudentModuleConceptOption>? Concepts = null);
+    IReadOnlyList<StudentModuleConceptOption>? Concepts = null,
+    bool CrosswordEnabled = false,
+    bool CrosswordAllowAllWords = false,
+    bool AllowAdvanceReview = false,
+    bool? AdvanceReviewPerformed = null);
 
 public sealed record StudentModuleConceptOption(Guid Id, string Name);

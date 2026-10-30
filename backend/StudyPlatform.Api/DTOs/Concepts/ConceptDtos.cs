@@ -14,6 +14,8 @@ public sealed class SaveConceptRequest
     [Required] public List<RecognitionActivityInput> RecognitionActivities { get; init; } = [];
     [Required] public List<FillBlankActivityInput> FillBlankActivities { get; init; } = [];
     [Required] public List<OrderingActivityInput> OrderingActivities { get; init; } = [];
+    [StringLength(80)] public string? CrosswordWord { get; init; }
+    [StringLength(1000)] public string? CrosswordClue { get; init; }
 }
 
 public sealed class RecognitionActivityInput
@@ -53,7 +55,8 @@ public sealed record ConceptDetailsResponse(
     IReadOnlyList<Guid> PrerequisiteIds,
     IReadOnlyList<RecognitionActivityResponse> RecognitionActivities,
     IReadOnlyList<FillBlankActivityResponse> FillBlankActivities,
-    IReadOnlyList<OrderingActivityResponse> OrderingActivities);
+    IReadOnlyList<OrderingActivityResponse> OrderingActivities,
+    string? CrosswordWord = null, string? CrosswordClue = null);
 public sealed record RecognitionActivityResponse(Guid Id, string Statement, bool IsCorrect, string Explanation, bool IsActive);
 public sealed record FillBlankAnswerResponse(int SlotNumber, string CorrectText);
 public sealed record FillBlankActivityResponse(Guid Id, string Text, bool IsActive,
@@ -77,5 +80,6 @@ public static class ConceptResponseMapper
                 item.Distractors.Select(distractor => distractor.Text).ToArray())).ToArray(),
         concept.OrderingActivities.OrderBy(item => item.CreatedAtUtc)
             .Select(item => new OrderingActivityResponse(item.Id, item.Instruction, item.IsActive,
-                item.Items.OrderBy(entry => entry.Position).Select(entry => entry.Text).ToArray())).ToArray());
+                item.Items.OrderBy(entry => entry.Position).Select(entry => entry.Text).ToArray())).ToArray(),
+        concept.CrosswordWord, concept.CrosswordClue);
 }

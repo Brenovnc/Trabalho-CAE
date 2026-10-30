@@ -1,9 +1,11 @@
 ﻿import { requestApi } from './authApi'
-import type { ActivityAnswer, AnswerResponse, RevealResponse, StartStudySession, StudentModule, StudySession } from '../types/learning'
+import type { ActivityAnswer, AnswerResponse, RevealResponse, StartStudySession, StudentCrosswordEntry, StudentModule, StudySession } from '../types/learning'
 
 export const studyApi = {
   listModules: () => requestApi<StudentModule[]>('/api/student/modules'),
   getModule: (moduleId: string) => requestApi<StudentModule>(`/api/student/modules/${moduleId}`),
+  getCrossword: (moduleId: string, allWords = false) => requestApi<StudentCrosswordEntry[]>(`/api/student/modules/${moduleId}/crossword?allWords=${allWords}`),
+  advanceReview: (moduleId: string) => requestApi<StudentModule>(`/api/student/modules/${moduleId}/advance-review`, 'POST'),
   startSession: (moduleId: string) => requestApi<StartStudySession>(`/api/student/modules/${moduleId}/sessions`, 'POST'),
   startFreePractice: (moduleId: string, conceptId: string | null) => requestApi<StartStudySession>(
     `/api/student/modules/${moduleId}/free-practice/sessions`, 'POST', { conceptId }),

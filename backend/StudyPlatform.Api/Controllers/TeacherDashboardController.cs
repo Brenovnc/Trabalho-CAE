@@ -10,9 +10,12 @@ namespace StudyPlatform.Api.Controllers;
 [ApiController]
 [Authorize(Policy = AuthPolicies.Teacher)]
 [Route("api/teacher/dashboard")]
-public sealed class TeacherDashboardController(TeacherProgressService progress) : ControllerBase
+public sealed class TeacherDashboardController(TeacherProgressService progress, TeacherStatisticsService statistics) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<TeacherDashboardResponse>> Get(CancellationToken ct) => Ok(await progress.GetDashboardAsync(TeacherId, ct));
+    [HttpGet("statistics")]
+    public async Task<ActionResult<TeacherDashboardStatisticsResponse>> GetStatistics([FromQuery] int days = 30, CancellationToken ct = default) =>
+        Ok(await statistics.GetDashboardAsync(TeacherId, days, ct));
     private Guid TeacherId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }

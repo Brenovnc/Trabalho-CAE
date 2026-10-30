@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { teacherProgressApi, type ClassroomProgress } from '../../services/teacherProgressApi'
 import styles from './TeacherProgressPages.module.css'
+import { BarChart, LineChart, StackedBarChart } from '../../components/charts/Charts'
+import type { ClassroomStats } from '../../services/teacherProgressApi'
 
 export function formatLastAccess(value: string | null) {
   if (!value) return 'Nunca'
@@ -20,6 +22,8 @@ export function ClassroomProgressPage({ classroomId, onBack, onStudent }: Props)
   const [data, setData] = useState<ClassroomProgress | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [stats, setStats] = useState<ClassroomStats | null>(null)
+  const [days, setDays] = useState(30)
   useEffect(() => {
     let active = true
     setLoading(true); setError('')
@@ -28,9 +32,12 @@ export function ClassroomProgressPage({ classroomId, onBack, onStudent }: Props)
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [classroomId])
+  useEffect(() => { let active = true; teacherProgressApi.classroomStatistics(classroomId, days).then(value => { if (active) setStats(value) }).catch(() => { if (active) setStats(null) }); return () => { active = false } }, [classroomId, days])
   return <main className={styles.page}>
     <button className={styles.back} type='button' onClick={onBack}>← Turmas</button>
     <p className={styles.eyebrow}>Acompanhamento da turma</p><h1>{data?.classroomName ?? 'Progresso dos alunos'}</h1>
+    <label>Período <select value={days} onChange={event => setDays(Number(event.target.value))}><option value={7}>7 dias</option><option value={30}>30 dias</option><option value={90}>90 dias</option></select></label>
+    {stats && <div className={styles.tableCard}><StackedBarChart title="Distribuição dos conceitos" values={[{ label: 'Dominados', value: stats.distribution.mastered, color: '#36b37e' }, { label: 'Em aprendizagem', value: stats.distribution.learning, color: '#7887ff' }, { label: 'Não iniciados', value: stats.distribution.notStarted, color: '#777d8e' }]} /><LineChart title="Atividades e taxa de acerto" labels={stats.daily.map(item => item.date.slice(5))} series={[{ label: 'Atividades', color: '#7887ff', values: stats.daily.map(item => item.activities) }, { label: 'Acertos (%)', color: '#36b37e', values: stats.daily.map(item => item.correctRate) }]} /><BarChart title="Alunos por faixa de progresso" labels={stats.progressBands.map(item => item.range)} values={stats.progressBands.map(item => item.students)} /><BarChart title="Taxa de acerto por atividade (%)" labels={stats.activityTypes.map(item => item.type)} values={stats.activityTypes.map(item => item.correctRate ?? 0)} suffix="%" hasData={stats.activityTypes.some(item => item.correctRate !== null)} emptyText="Sem tentativas avaliáveis no período" /><BarChart title="Conceitos com mais erros (%)" labels={stats.mostErrors.map(item => item.name)} values={stats.mostErrors.map(item => item.errorRate)} suffix="%" /></div>}
     {loading && <p role='status' className={styles.state}>Carregando progresso…</p>}
     {error && <p role='alert' className={styles.error}>{error}<button type='button' onClick={() => { setData(null); setLoading(true); setError(''); void teacherProgressApi.classroom(classroomId).then(setData).catch(() => setError('Não foi possível carregar o progresso da turma.')).finally(() => setLoading(false)) }}>Tentar novamente</button></p>}
     {!loading && !error && data && (data.students.length === 0 ? <section className={styles.empty}><h2>Nenhum aluno cadastrado nesta turma.</h2><p>Cadastre alunos na página da turma para acompanhar o progresso.</p></section> :

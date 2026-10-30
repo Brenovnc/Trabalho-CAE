@@ -10,11 +10,13 @@ type OrderDraft = { id?: string; instruction: string; items: string }
 type ConceptDraft = {
   id?: string; name: string; definition: string; keywords: string; clues: string; prerequisiteIds: string[]
   recognitionActivities: ActivityDraft[]; fillBlankActivities: FillDraft[]; orderingActivities: OrderDraft[]
+  crosswordWord: string; crosswordClue: string
 }
-const blankModule: ModuleInput = { title: '', description: '', subject: '', version: 1 }
+const blankModule: ModuleInput = { title: '', description: '', subject: '', version: 1, crosswordEnabled: false, crosswordAllowAllWords: false, allowAdvanceReview: false }
 const blankConcept = (): ConceptDraft => ({
   name: '', definition: '', keywords: '', clues: '', prerequisiteIds: [],
   recognitionActivities: [], fillBlankActivities: [], orderingActivities: [],
+  crosswordWord: '', crosswordClue: '',
 })
 const lines = (value: string) => value.split('\n').map(item => item.trim()).filter(Boolean)
 const statusCount = (list: { isActive: boolean }[]) => list.filter(item => item.isActive).length
@@ -33,6 +35,7 @@ function draftFromConcept(concept: Concept): ConceptDraft {
     orderingActivities: concept.orderingActivities.filter(item => item.isActive).map(item => ({
       id: item.id, instruction: item.instruction, items: item.items.join('\n'),
     })),
+    crosswordWord: concept.crosswordWord ?? '', crosswordClue: concept.crosswordClue ?? '',
   }
 }
 
@@ -51,6 +54,8 @@ function toConceptInput(draft: ConceptDraft): ConceptInput {
       distractors: lines(item.distractors),
     })),
     orderingActivities: draft.orderingActivities.map(item => ({ id: item.id, instruction: item.instruction, items: lines(item.items) })),
+    crosswordWord: draft.crosswordWord,
+    crosswordClue: draft.crosswordClue,
   }
 }
 
@@ -71,7 +76,8 @@ export function ModulesPage() {
       setError(''); setNotice(''); setBusy(true)
       const [details, result] = await Promise.all([moduleApi.get(id), moduleApi.validate(id)])
       setSelected(details)
-      setModuleDraft({ title: details.title, description: details.description ?? '', subject: details.subject, version: details.version })
+      setModuleDraft({ title: details.title, description: details.description ?? '', subject: details.subject, version: details.version,
+        crosswordEnabled: details.crosswordEnabled ?? false, crosswordAllowAllWords: details.crosswordAllowAllWords ?? false, allowAdvanceReview: details.allowAdvanceReview ?? false })
       setValidation(result)
       setConceptDraft(blankConcept())
     } catch (cause) { setError(messageOf(cause)) } finally { setBusy(false) }
@@ -82,7 +88,8 @@ export function ModulesPage() {
     if (!id) return
     const [details, result] = await Promise.all([moduleApi.get(id), moduleApi.validate(id)])
     setSelected(details); setValidation(result)
-    setModuleDraft({ title: details.title, description: details.description ?? '', subject: details.subject, version: details.version })
+    setModuleDraft({ title: details.title, description: details.description ?? '', subject: details.subject, version: details.version,
+      crosswordEnabled: details.crosswordEnabled ?? false, crosswordAllowAllWords: details.crosswordAllowAllWords ?? false, allowAdvanceReview: details.allowAdvanceReview ?? false })
     if (conceptDraft.id) {
       const updatedConcept = details.concepts.find(item => item.id === conceptDraft.id)
       setConceptDraft(updatedConcept ? draftFromConcept(updatedConcept) : blankConcept())
@@ -165,7 +172,8 @@ export function ModulesPage() {
       const imported = await moduleApi.importJson(await file.text())
       const result = await moduleApi.validate(imported.id)
       setSelected(imported)
-      setModuleDraft({ title: imported.title, description: imported.description ?? '', subject: imported.subject, version: imported.version })
+      setModuleDraft({ title: imported.title, description: imported.description ?? '', subject: imported.subject, version: imported.version,
+        crosswordEnabled: imported.crosswordEnabled ?? false, crosswordAllowAllWords: imported.crosswordAllowAllWords ?? false, allowAdvanceReview: imported.allowAdvanceReview ?? false })
       setValidation(result); setConceptDraft(blankConcept())
       await refreshList()
       setNotice('Módulo importado como rascunho.')
@@ -217,6 +225,7 @@ export function ModulesPage() {
               <label>Disciplina<input required maxLength={120} value={moduleDraft.subject} onChange={event => setModuleDraft({ ...moduleDraft, subject: event.target.value })} /></label>
               <label className={styles.wide}>Descrição<textarea maxLength={4000} rows={3} value={moduleDraft.description ?? ''} onChange={event => setModuleDraft({ ...moduleDraft, description: event.target.value })} /></label>
               <label>Versão<input required type="number" min={1} value={moduleDraft.version} onChange={event => setModuleDraft({ ...moduleDraft, version: Number(event.target.value) })} /></label>
+              <ModuleFeatureFields value={moduleDraft} onChange={setModuleDraft} />
               <button disabled={busy} type="submit">Salvar módulo</button>
             </form>
           </section>
@@ -252,12 +261,22 @@ export function ModulesPage() {
   )
 }
 
+function ModuleFeatureFields({ value, onChange }: { value: ModuleInput; onChange: (value: ModuleInput) => void }) {
+  return <fieldset className={styles.featureOptions}>
+    <legend>Recursos para o aluno</legend>
+    <label className={styles.check}><input type="checkbox" checked={value.crosswordEnabled ?? false} onChange={event => onChange({ ...value, crosswordEnabled: event.target.checked, crosswordAllowAllWords: event.target.checked ? value.crosswordAllowAllWords : false })} />Habilitar cruzadinha</label>
+    <label className={styles.check}><input type="checkbox" checked={value.crosswordAllowAllWords ?? false} disabled={!value.crosswordEnabled} onChange={event => onChange({ ...value, crosswordAllowAllWords: event.target.checked })} />Permitir que o aluno use todas as palavras do módulo na cruzadinha</label>
+    <label className={styles.check}><input type="checkbox" checked={value.allowAdvanceReview ?? false} onChange={event => onChange({ ...value, allowAdvanceReview: event.target.checked })} />Permitir que o aluno adiante a próxima sessão</label>
+  </fieldset>
+}
+
 function ModuleFields({ value, onChange, onSubmit, busy }: { value: ModuleInput; onChange: (value: ModuleInput) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; busy: boolean }) {
   return <form className={styles.formGrid} onSubmit={onSubmit}>
     <label>Título<input required maxLength={160} value={value.title} onChange={event => onChange({ ...value, title: event.target.value })} /></label>
     <label>Disciplina<input required maxLength={120} value={value.subject} onChange={event => onChange({ ...value, subject: event.target.value })} /></label>
     <label className={styles.wide}>Descrição<textarea rows={3} maxLength={4000} value={value.description ?? ''} onChange={event => onChange({ ...value, description: event.target.value })} /></label>
     <label>Versão<input type="number" min={1} required value={value.version} onChange={event => onChange({ ...value, version: Number(event.target.value) })} /></label>
+    <ModuleFeatureFields value={value} onChange={onChange} />
     <button disabled={busy} type="submit">Criar módulo</button>
   </form>
 }
@@ -319,6 +338,10 @@ function ConceptEditor({ module, value, onChange, onSubmit, onDuplicate, onDeact
           <button type="button" className={styles.textButton} onClick={() => patch('orderingActivities', value.orderingActivities.filter((_, i) => i !== index))}>Remover atividade</button>
         </div>)}
         <button type="button" className={styles.secondary} onClick={() => patch('orderingActivities', [...value.orderingActivities, { instruction: '', items: '' }])}>+ Atividade de ordenação</button>
+      </details>
+      <details className={styles.editorSection}><summary><span>Cruzadinha</span><span>{value.crosswordWord.trim() && value.crosswordClue.trim() ? '✓ preenchida' : 'opcional'}</span></summary>
+        <label>Conceito (resposta)<small>A palavra que o aluno deve preencher</small><input maxLength={80} value={value.crosswordWord} onChange={event => patch('crosswordWord', event.target.value)} /></label>
+        <label>Definição<small>Descreva o item sem citar o nome dele</small><textarea maxLength={1000} rows={3} value={value.crosswordClue} onChange={event => patch('crosswordClue', event.target.value)} /></label>
       </details>
       <div className={styles.formActions}><button disabled={busy} type="submit">{value.id ? 'Salvar conceito' : 'Adicionar conceito'}</button><button type="button" className={styles.secondary} onClick={() => onChange(blankConcept())}>Limpar formulário</button></div>
     </form>

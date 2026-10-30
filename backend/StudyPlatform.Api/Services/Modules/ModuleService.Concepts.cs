@@ -177,6 +177,8 @@ foreach (var clue in concept.Clues) clue.IsActive = false;
     }
     private void ApplyConceptContent(Concept concept, SaveConceptRequest request, DateTime now)
     {
+        concept.CrosswordWord = string.IsNullOrWhiteSpace(request.CrosswordWord) ? null : request.CrosswordWord.Trim();
+        concept.CrosswordClue = string.IsNullOrWhiteSpace(request.CrosswordClue) ? null : request.CrosswordClue.Trim();
         var values = request.Keywords.Select(value => value.Trim()).Where(value => value.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         foreach (var keyword in concept.Keywords)

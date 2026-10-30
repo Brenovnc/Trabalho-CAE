@@ -39,6 +39,8 @@
 .conceptForm { display:grid; gap:1rem; }
 .editorSection { min-width:0; border:1px solid #3b4558; border-radius:.7rem; padding:.85rem 1rem; background:#151a24; }
 .editorSection summary { color:#edf0fa; font-weight:700; cursor:pointer; }
+.editorSection summary { display:flex; justify-content:space-between; gap:1rem; }
+.editorSection summary span+span { color:#bfc7d8; font-size:.85rem; font-weight:500; text-align:right; }
 .editorSection summary:focus-visible { outline:2px solid #b6beff; outline-offset:3px; border-radius:.2rem; }
 .editorSection[open] summary { margin-bottom:.9rem; }
 .editorSection>label { display:grid; gap:.35rem; color:#d8deec; font-size:.9rem; }
@@ -47,6 +49,7 @@
 .editorSection>summary::marker { color:#bbc2ff; }
 .conceptForm small { color:#aab2c5; font-weight:400; }
 .page fieldset { min-width:0; border:1px solid #3b4558; border-radius:.7rem; padding:1rem; }
+.featureOptions { grid-column:1/-1; }
 .page legend { padding:0 .35rem; color:#dce1f0; font-weight:650; }
 .check { display:flex; align-items:center; gap:.5rem; margin:.45rem 0; color:#d8deec; }
 .check input { width:auto; }

@@ -21,15 +21,18 @@ export function StudentModulesPage({ onNavigate, onLogout, onUnauthorized }: Pro
     return () => { active = false }
   }, [onUnauthorized])
 
+  const orderedModules = [...modules].sort((a, b) => b.pendingReviews - a.pendingReviews || a.title.localeCompare(b.title, 'pt-BR'))
+
   return <main className={styles.page}>
     <header className={styles.header}><div><p className={styles.eyebrow}>Área do aluno</p><h1>Escolha um módulo</h1></div><button type="button" onClick={onLogout}>Sair</button></header>
     {loading && <p role="status">Carregando módulos…</p>}
     {error && <p role="alert">{error}</p>}
     {!loading && !error && modules.length === 0 && <section className={styles.card}><h2>Nenhum módulo disponível</h2><p>Quando sua turma tiver um módulo publicado, ele aparecerá aqui.</p></section>}
     <div className={styles.moduleGrid}>
-      {modules.map(module => <article className={styles.card} key={module.id}>
+      {orderedModules.map(module => <article className={`${styles.card} ${module.pendingReviews > 0 ? styles.pendingCard : ''}`} key={module.id}>
         <p className={styles.subject}>{module.subject}</p><h2>{module.title}</h2>
         {module.description && <p>{module.description}</p>}
+        {module.pendingReviews > 0 && <p className={styles.pendingNotice}><span aria-hidden="true">!</span><span>{module.pendingReviews} {module.pendingReviews === 1 ? 'revisão pendente' : 'revisões pendentes'}</span></p>}
         <button type="button" onClick={() => onNavigate(module.activeSessionId ? `/student/sessions/${module.activeSessionId}` : `/student/modules/${module.id}`)}>
           {module.activeSessionId ? 'Retomar sessão' : 'Abrir módulo'}
         </button>

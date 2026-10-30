@@ -14,11 +14,13 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
         var modules = await db.ClassroomModules.AsNoTracking()
             .Where(assignment => assignment.ClassroomId == classroomId && assignment.Module.Status == ModuleStatus.Published)
             .OrderBy(assignment => assignment.Module.Title)
-            .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject })
+            .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject,
+                assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview })
             .ToListAsync(ct);
         var results = new List<StudentModuleResponse>(modules.Count);
         foreach (var module in modules)
-            results.Add(await BuildResponseAsync(studentId, module.Id, module.Title, module.Description, module.Subject, ct));
+            results.Add(await BuildResponseAsync(studentId, module.Id, module.Title, module.Description, module.Subject,
+                module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, ct));
         return results;
     }
 
@@ -28,13 +30,16 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
         var module = await db.ClassroomModules.AsNoTracking()
             .Where(assignment => assignment.ClassroomId == classroomId && assignment.ModuleId == moduleId
                 && assignment.Module.Status == ModuleStatus.Published)
-            .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject })
+            .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject,
+                assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview })
             .SingleOrDefaultAsync(ct)
             ?? throw new ApiException(404, "student_module_not_found", "O módulo não foi encontrado.");
-        return await BuildResponseAsync(studentId, module.Id, module.Title, module.Description, module.Subject, ct);
+        return await BuildResponseAsync(studentId, module.Id, module.Title, module.Description, module.Subject,
+            module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, ct);
     }
 
-    private async Task<StudentModuleResponse> BuildResponseAsync(Guid studentId, Guid moduleId, string title, string? description, string subject, CancellationToken ct)
+    private async Task<StudentModuleResponse> BuildResponseAsync(Guid studentId, Guid moduleId, string title, string? description, string subject,
+        bool crosswordEnabled, bool crosswordAllowAllWords, bool allowAdvanceReview, CancellationToken ct)
     {
         var concepts = await db.Concepts.AsNoTracking().Where(concept => concept.ModuleId == moduleId && concept.IsActive)
             .OrderBy(concept => concept.Name).Select(concept => new StudentModuleConceptOption(concept.Id, concept.Name)).ToListAsync(ct);
@@ -56,7 +61,8 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
         var progress = activeConceptCount == 0 ? 0 : (int)Math.Round((double)mastered * 100 / activeConceptCount, MidpointRounding.AwayFromZero);
         return new StudentModuleResponse(moduleId, title, description, subject, activeSession?.Id,
             activeConceptCount, mastered, learning, notStarted, pending, progress, nextReview,
-            activeSession?.Mode == StudySessionMode.FreePractice ? "FREE_PRACTICE" : activeSession is null ? null : "NORMAL", concepts);
+            activeSession?.Mode == StudySessionMode.FreePractice ? "FREE_PRACTICE" : activeSession is null ? null : "NORMAL", concepts,
+            crosswordEnabled, crosswordEnabled && crosswordAllowAllWords, allowAdvanceReview);
     }
 
     private async Task<Guid> GetActiveClassroomIdAsync(Guid studentId, CancellationToken ct) =>

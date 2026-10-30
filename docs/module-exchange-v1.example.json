@@ -6,6 +6,9 @@
     "description": "Exemplo mínimo de intercâmbio.",
     "subject": "Redes de Computadores",
     "version": 1,
+    "crosswordEnabled": false,
+    "crosswordAllowAllWords": false,
+    "allowAdvanceReview": false,
     "concepts": [
       {
         "externalId": "ip",

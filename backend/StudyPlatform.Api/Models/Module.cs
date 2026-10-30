@@ -11,6 +11,9 @@ public sealed class Module
     public string Subject { get; set; } = string.Empty;
     public int Version { get; set; } = 1;
     public ModuleStatus Status { get; set; } = ModuleStatus.Draft;
+    public bool CrosswordEnabled { get; set; }
+    public bool CrosswordAllowAllWords { get; set; }
+    public bool AllowAdvanceReview { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 

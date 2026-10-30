@@ -17,6 +17,9 @@ public sealed class ModuleExchange
     public string? Description { get; init; }
     public required string Subject { get; init; }
     public required int Version { get; init; }
+    public bool CrosswordEnabled { get; init; }
+    public bool CrosswordAllowAllWords { get; init; }
+    public bool AllowAdvanceReview { get; init; }
     public required List<ConceptExchange> Concepts { get; init; }
 }
 
@@ -33,6 +36,14 @@ public sealed class ConceptExchange
     public required List<TrueFalseExchange> TrueFalseActivities { get; init; }
     public required List<FillBlankExchange> FillBlankActivities { get; init; }
     public required List<OrderingExchange> OrderingActivities { get; init; }
+    public CrosswordExchange? Crossword { get; init; }
+}
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed class CrosswordExchange
+{
+    public required string Word { get; init; }
+    public required string Clue { get; init; }
 }
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]

@@ -14,7 +14,7 @@ namespace StudyPlatform.Api.Controllers;
 [ApiController]
 [Authorize(Policy = AuthPolicies.Teacher)]
 [Route("api/classrooms")]
-public sealed class ClassroomsController(ClassroomService classrooms, StudentManagementService students, TeacherProgressService progress) : ControllerBase
+public sealed class ClassroomsController(ClassroomService classrooms, StudentManagementService students, TeacherProgressService progress, TeacherStatisticsService statistics) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<ClassroomSummaryResponse>>> List(CancellationToken ct) => Ok(await classrooms.ListAsync(TeacherId, ct));
@@ -36,6 +36,16 @@ public sealed class ClassroomsController(ClassroomService classrooms, StudentMan
     [HttpGet("{classroomId:guid}/students/{studentId:guid}/progress")]
     public async Task<ActionResult<StudentProgressResponse>> GetStudentProgress(Guid classroomId, Guid studentId, CancellationToken ct) =>
         Ok(await progress.GetStudentProgressAsync(TeacherId, classroomId, studentId, ct));
+
+    [HttpGet("{classroomId:guid}/statistics")]
+    public async Task<ActionResult<ClassroomStatisticsResponse>> GetStatistics(Guid classroomId, [FromQuery] int days = 30,
+        [FromQuery] Guid? moduleId = null, CancellationToken ct = default) =>
+        Ok(await statistics.GetClassroomAsync(TeacherId, classroomId, days, moduleId, ct));
+
+    [HttpGet("{classroomId:guid}/students/{studentId:guid}/statistics")]
+    public async Task<ActionResult<StudentStatisticsResponse>> GetStudentStatistics(Guid classroomId, Guid studentId,
+        [FromQuery] int days = 30, [FromQuery] Guid? moduleId = null, CancellationToken ct = default) =>
+        Ok(await statistics.GetStudentAsync(TeacherId, classroomId, studentId, days, moduleId, ct));
 
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ClassroomDetailsResponse>> Update(Guid id, UpdateClassroomRequest request, CancellationToken ct) => Ok(await classrooms.UpdateAsync(TeacherId, id, request, ct));

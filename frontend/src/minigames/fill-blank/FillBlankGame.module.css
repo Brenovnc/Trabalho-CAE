@@ -2,3 +2,7 @@
 .slot { min-width: 8rem; margin: 0 .25rem; border: 1px dashed #9ca8ff; border-radius: .4rem; padding: .45rem; color: #fff; background: #20283b; cursor: pointer; }
 .options, .removeList { display: flex; flex-wrap: wrap; gap: .6rem; padding: 0; list-style: none; }
 .options button, .removeList button { min-height: 2.75rem; padding: .55rem .8rem; }
+.slotTarget { display:inline-flex; position:relative; min-height:2.75rem; vertical-align:middle; }
+.slotTarget .slot { min-height:2.75rem; }
+.dropTarget .slot { outline:3px solid #b6beff; outline-offset:2px; background:#343e5c; }
+.options li { min-width:0; }

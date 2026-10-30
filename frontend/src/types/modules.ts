@@ -3,6 +3,7 @@
 export type ModuleSummary = {
   id: string; title: string; description: string | null; subject: string; version: number
   status: ModuleStatus; createdAtUtc: string; updatedAtUtc: string; activeConceptCount: number
+  crosswordEnabled?: boolean; crosswordAllowAllWords?: boolean; allowAdvanceReview?: boolean
 }
 
 export type RecognitionActivity = { id: string; statement: string; isCorrect: boolean; explanation: string; isActive: boolean }
@@ -15,19 +16,25 @@ export type Concept = {
   id: string; moduleId: string; name: string; definition: string; isActive: boolean
   createdAtUtc: string; updatedAtUtc: string; keywords: string[]; clues: string[]; prerequisiteIds: string[]
   recognitionActivities: RecognitionActivity[]; fillBlankActivities: FillBlankActivity[]; orderingActivities: OrderingActivity[]
+  crosswordWord?: string | null; crosswordClue?: string | null
 }
 export type ModuleDetails = {
   id: string; title: string; description: string | null; subject: string; version: number
   status: ModuleStatus; createdAtUtc: string; updatedAtUtc: string; concepts: Concept[]
+  crosswordEnabled?: boolean; crosswordAllowAllWords?: boolean; allowAdvanceReview?: boolean
 }
 export type PublicationIssue = { conceptId: string | null; code: string; message: string }
 export type PublicationValidation = { isValid: boolean; errors: PublicationIssue[] }
-export type ModuleInput = { title: string; description: string | null; subject: string; version: number }
+export type ModuleInput = {
+  title: string; description: string | null; subject: string; version: number
+  crosswordEnabled?: boolean; crosswordAllowAllWords?: boolean; allowAdvanceReview?: boolean
+}
 export type ConceptInput = {
   name: string; definition: string; keywords: string[]; clues: string[]; prerequisiteIds: string[]
   recognitionActivities: { id?: string; statement: string; isCorrect: boolean; explanation: string }[]
   fillBlankActivities: { id?: string; text: string; answers: { slotNumber: number; correctText: string }[]; distractors: string[] }[]
   orderingActivities: { id?: string; instruction: string; items: string[] }[]
+  crosswordWord?: string | null; crosswordClue?: string | null
 }
 
 export function moduleStatusLabel(status: ModuleStatus): string {

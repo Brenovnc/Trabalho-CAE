@@ -15,6 +15,8 @@ public sealed class ConceptConfiguration : IEntityTypeConfiguration<Concept>
         builder.Property(x => x.ExternalId).HasMaxLength(80);
         builder.Property(x => x.Name).HasMaxLength(160).IsRequired();
         builder.Property(x => x.Definition).IsRequired();
+        builder.Property(x => x.CrosswordWord).HasMaxLength(80);
+        builder.Property(x => x.CrosswordClue).HasMaxLength(1000);
         builder.HasIndex(x => x.ModuleId);
         builder.HasIndex(x => new { x.ModuleId, x.ExternalId })
             .IsUnique()

@@ -3,6 +3,7 @@ import { AuthForm } from './pages/auth/AuthForm'
 import { ModulesPage } from './pages/modules/ModulesPage'
 import { ClassroomsPage } from './pages/classrooms/ClassroomsPage'
 import { StudentModulePage } from './pages/student/StudentModulePage'
+import { StudentCrosswordPage } from './pages/student/StudentCrosswordPage'
 import { StudentModulesPage } from './pages/student/StudentModulesPage'
 import { StudySessionPage } from './pages/student/StudySessionPage'
 import { TeacherLayout, type TeacherSection } from './layouts/TeacherLayout'
@@ -18,7 +19,7 @@ function App() {
   const [user, setUser] = useState<AuthenticatedUser | null>(null)
   const [ready, setReady] = useState(false)
   const [notice, setNotice] = useState('')
-  const [pathname, setPathname] = useState(window.location.pathname)
+  const [pathname, setPathname] = useState(window.location.pathname + window.location.search)
 
   const navigate = useCallback((path: string, replace = false) => {
     if (replace) window.history.replaceState(null, '', path)
@@ -27,7 +28,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const handlePopState = () => setPathname(window.location.pathname)
+    const handlePopState = () => setPathname(window.location.pathname + window.location.search)
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
@@ -75,8 +76,10 @@ function App() {
   }, [navigate])
 
   if (ready && user?.role === 'STUDENT') {
+    const crosswordMatch = /^\/student\/modules\/([^/]+)\/crossword(?:\?.*)?$/.exec(pathname)
     const moduleMatch = /^\/student\/modules\/([^/?]+)(?:\?.*)?$/.exec(pathname)
     const sessionMatch = /^\/student\/sessions\/([^/]+)$/.exec(pathname)
+    if (crosswordMatch) return <StudentCrosswordPage moduleId={crosswordMatch[1]} allWords={new URLSearchParams(pathname.split('?')[1] ?? '').get('allWords') === 'true'} onNavigate={navigate} onUnauthorized={handleUnauthorized} />
     if (moduleMatch) return <StudentModulePage moduleId={moduleMatch[1]} startFreePracticeRequested={pathname.includes('practice=free')} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
     if (sessionMatch) return <StudySessionPage sessionId={sessionMatch[1]} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
     if (pathname !== '/student') navigate('/student', true)

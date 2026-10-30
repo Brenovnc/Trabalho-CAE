@@ -130,4 +130,6 @@ O dashboard conta módulos não arquivados do professor, turmas ativas e alunos 
 
 ## Limitações e validação manual
 
+Recursos adicionais de integração: módulos podem habilitar opcionalmente cruzadinha (com palavras limitadas a conceitos dominados ou a todos os conceitos ativos) e permitir adiantar revisões; as páginas de acompanhamento exibem estatísticas agregadas nos períodos de 7, 30 ou 90 dias. Arrastar itens no preenchimento e na ordenação é suportado por mouse, toque e teclado.
+
 Não há seed de demonstração, recuperação por e-mail, chaves de cookie persistidas em Development ou inspeção automática entre navegadores. Não são parte do MVP cruzadinha, matching, simulações/diagramas, ranking, gamificação, analytics avançado, notificações, modo offline/PWA, compartilhamento/biblioteca pública ou IA. Consulte docs/manual-validation.md para a sequência de verificação manual, incluindo desktop e celular.

@@ -26,7 +26,8 @@ public sealed partial class ModuleService(
             .OrderByDescending(module => module.UpdatedAtUtc)
             .Select(module => new ModuleSummaryResponse(module.Id, module.Title, module.Description,
                 module.Subject, module.Version, module.Status, module.CreatedAtUtc, module.UpdatedAtUtc,
-                module.Concepts.Count(concept => concept.IsActive)))
+                module.Concepts.Count(concept => concept.IsActive), module.CrosswordEnabled,
+                module.CrosswordAllowAllWords, module.AllowAdvanceReview))
             .ToListAsync(ct);
     }
 
@@ -47,6 +48,9 @@ public sealed partial class ModuleService(
             Description = CleanOptional(request.Description),
             Subject = request.Subject.Trim(),
             Version = request.Version,
+            CrosswordEnabled = request.CrosswordEnabled == true,
+            CrosswordAllowAllWords = request.CrosswordEnabled == true && request.CrosswordAllowAllWords == true,
+            AllowAdvanceReview = request.AllowAdvanceReview == true,
             Status = ModuleStatus.Draft,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
@@ -64,6 +68,10 @@ public sealed partial class ModuleService(
         module.Description = CleanOptional(request.Description);
         module.Subject = request.Subject.Trim();
         module.Version = request.Version;
+        if (request.CrosswordEnabled.HasValue) module.CrosswordEnabled = request.CrosswordEnabled.Value;
+        if (!module.CrosswordEnabled) module.CrosswordAllowAllWords = false;
+        else if (request.CrosswordAllowAllWords.HasValue) module.CrosswordAllowAllWords = request.CrosswordAllowAllWords.Value;
+        if (request.AllowAdvanceReview.HasValue) module.AllowAdvanceReview = request.AllowAdvanceReview.Value;
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
         return MapModule(module);
@@ -81,6 +89,9 @@ public sealed partial class ModuleService(
             Description = source.Description,
             Subject = source.Subject,
             Version = source.Version,
+            CrosswordEnabled = source.CrosswordEnabled,
+            CrosswordAllowAllWords = source.CrosswordEnabled && source.CrosswordAllowAllWords,
+            AllowAdvanceReview = source.AllowAdvanceReview,
             Status = ModuleStatus.Draft,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
@@ -146,12 +157,14 @@ public sealed partial class ModuleService(
     private static ModuleDetailsResponse MapModule(Module module) => new(
         module.Id, module.Title, module.Description, module.Subject, module.Version, module.Status,
         module.CreatedAtUtc, module.UpdatedAtUtc,
-        module.Concepts.OrderBy(item => item.Name).Select(ConceptResponseMapper.Map).ToArray());
+        module.Concepts.OrderBy(item => item.Name).Select(ConceptResponseMapper.Map).ToArray(),
+        module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview);
 
     private static Concept CloneConcept(Concept source, Guid newId, Guid moduleId, DateTime now)
     {
         var copy = new Concept { Id = newId, ModuleId = moduleId, ExternalId = source.ExternalId,
-            Name = source.Name, Definition = source.Definition, IsActive = source.IsActive,
+            Name = source.Name, Definition = source.Definition, CrosswordWord = source.CrosswordWord,
+            CrosswordClue = source.CrosswordClue, IsActive = source.IsActive,
             CreatedAtUtc = now, UpdatedAtUtc = now };
         foreach (var item in source.Keywords) copy.Keywords.Add(new ConceptKeyword { ConceptId = newId, Value = item.Value, IsActive = item.IsActive });
         foreach (var item in source.Clues) copy.Clues.Add(new ConceptClue { ConceptId = newId, Position = item.Position, Text = item.Text, IsActive = item.IsActive });
@@ -194,6 +207,9 @@ public sealed partial class ModuleService(
             throw BadRequest("invalid_keyword", "Cada palavra-chave pode possuir no máximo 200 caracteres.");
         if (request.Clues.Any(value => value is null || value.Length > 1000))
             throw BadRequest("invalid_clue", "Cada pista pode possuir no máximo 1000 caracteres.");
+        var crosswordErrors = CrosswordEntryRules.Validate(request.CrosswordWord, request.CrosswordClue);
+        if (crosswordErrors.Count > 0)
+            throw new ApiException(400, "invalid_crossword_entry", "Revise os campos da cruzadinha.", crosswordErrors);
     }
     private static string? CleanOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static ApiException NotFound(string code, string message) => new((int)HttpStatusCode.NotFound, code, message);

@@ -13,7 +13,13 @@
   nextReviewAtUtc: string | null
   activeSessionMode: 'NORMAL' | 'FREE_PRACTICE' | null
   concepts: { id: string; name: string }[]
+  crosswordEnabled?: boolean
+  crosswordAllowAllWords?: boolean
+  allowAdvanceReview?: boolean
+  advanceReviewPerformed?: boolean | null
 }
+
+export type StudentCrosswordEntry = { id: string; word: string; clue: string }
 
 export type ExposureSegment = { text: string | null; keywordIndex: number | null }
 export type ExposureActivity = {

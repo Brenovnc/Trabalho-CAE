@@ -10,7 +10,8 @@ namespace StudyPlatform.Api.Controllers;
 [ApiController]
 [Authorize(Policy = AuthPolicies.Student)]
 [Route("api/student")]
-public sealed class StudySessionsController(StudySessionService sessions, StudentStudyCatalogService catalog) : ControllerBase
+public sealed class StudySessionsController(StudySessionService sessions, StudentStudyCatalogService catalog,
+    StudentCrosswordService crosswords, AdvanceReviewService advanceReviews) : ControllerBase
 {
     [HttpGet("modules")]
     public async Task<ActionResult<IReadOnlyList<StudentModuleResponse>>> ListModules(CancellationToken ct) =>
@@ -19,6 +20,14 @@ public sealed class StudySessionsController(StudySessionService sessions, Studen
     [HttpGet("modules/{moduleId:guid}")]
     public async Task<ActionResult<StudentModuleResponse>> GetModule(Guid moduleId, CancellationToken ct) =>
         Ok(await catalog.GetModuleAsync(StudentId, moduleId, ct));
+
+    [HttpGet("modules/{moduleId:guid}/crossword")]
+    public async Task<ActionResult<IReadOnlyList<StudentCrosswordEntryResponse>>> GetCrossword(Guid moduleId, [FromQuery] bool allWords = false, CancellationToken ct = default) =>
+        Ok(await crosswords.GetAsync(StudentId, moduleId, allWords, ct));
+
+    [HttpPost("modules/{moduleId:guid}/advance-review")]
+    public async Task<ActionResult<StudentModuleResponse>> AdvanceReview(Guid moduleId, CancellationToken ct) =>
+        Ok(await advanceReviews.AdvanceAsync(StudentId, moduleId, ct));
 
     [HttpPost("modules/{moduleId:guid}/sessions")]
     public async Task<ActionResult<StartStudySessionResponse>> Start(Guid moduleId, CancellationToken ct) =>

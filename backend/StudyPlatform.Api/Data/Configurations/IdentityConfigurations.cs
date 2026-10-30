@@ -105,6 +105,9 @@ public sealed class ModuleConfiguration : IEntityTypeConfiguration<Module>
         builder.Property(x => x.Description);
         builder.Property(x => x.Subject).HasMaxLength(120).IsRequired();
         builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+        builder.Property(x => x.CrosswordEnabled).HasDefaultValue(false);
+        builder.Property(x => x.CrosswordAllowAllWords).HasDefaultValue(false);
+        builder.Property(x => x.AllowAdvanceReview).HasDefaultValue(false);
         builder.HasIndex(x => x.TeacherId);
 
         builder.HasOne(x => x.Teacher)

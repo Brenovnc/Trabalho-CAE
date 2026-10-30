@@ -45,12 +45,18 @@ public sealed class ModuleTransferService(
                 Description = module.Description,
                 Subject = module.Subject,
                 Version = module.Version,
+                CrosswordEnabled = module.CrosswordEnabled,
+                CrosswordAllowAllWords = module.CrosswordAllowAllWords,
+                AllowAdvanceReview = module.AllowAdvanceReview,
                 Concepts = module.Concepts.OrderBy(c => c.CreatedAtUtc).ThenBy(c => c.Id).Select(c => new ConceptExchange
                 {
                     ExternalId = externalIds[c.Id],
                     Name = c.Name,
                     Definition = c.Definition,
                     IsActive = c.IsActive,
+                    Crossword = c.CrosswordWord is not null && c.CrosswordClue is not null
+                        ? new CrosswordExchange { Word = c.CrosswordWord, Clue = c.CrosswordClue }
+                        : null,
                     Keywords = c.Keywords.OrderBy(k => k.Value, StringComparer.Ordinal)
                         .Select(k => new KeywordExchange { Value = k.Value, IsActive = k.IsActive }).ToList(),
                     Clues = c.Clues.OrderBy(k => k.Position)
@@ -101,6 +107,9 @@ public sealed class ModuleTransferService(
         {
             TeacherId = teacherId, Title = source.Title.Trim(), Description = Clean(source.Description),
             Subject = source.Subject.Trim(), Version = source.Version, Status = ModuleStatus.Draft,
+            CrosswordEnabled = source.CrosswordEnabled,
+            CrosswordAllowAllWords = source.CrosswordEnabled && source.CrosswordAllowAllWords,
+            AllowAdvanceReview = source.AllowAdvanceReview,
             CreatedAtUtc = now, UpdatedAtUtc = now,
         };
         var concepts = source.Concepts.ToDictionary(x => x.ExternalId, _ => new Concept(), StringComparer.Ordinal);
@@ -111,6 +120,8 @@ public sealed class ModuleTransferService(
             concept.ExternalId = item.ExternalId;
             concept.Name = item.Name.Trim();
             concept.Definition = item.Definition.Trim();
+            concept.CrosswordWord = item.Crossword?.Word.Trim();
+            concept.CrosswordClue = item.Crossword?.Clue.Trim();
             concept.IsActive = item.IsActive;
             concept.CreatedAtUtc = now;
             concept.UpdatedAtUtc = now;
@@ -161,7 +172,8 @@ public sealed class ModuleTransferService(
         await transaction.CommitAsync(ct);
         return new ModuleDetailsResponse(imported.Id, imported.Title, imported.Description, imported.Subject,
             imported.Version, imported.Status, imported.CreatedAtUtc, imported.UpdatedAtUtc,
-            imported.Concepts.OrderBy(c => c.Name).Select(ConceptResponseMapper.Map).ToArray());
+            imported.Concepts.OrderBy(c => c.Name).Select(ConceptResponseMapper.Map).ToArray(),
+            imported.CrosswordEnabled, imported.CrosswordAllowAllWords, imported.AllowAdvanceReview);
     }
 
     private Dictionary<string, string[]> Validate(ModuleExchangeDocument document)
@@ -196,6 +208,13 @@ public sealed class ModuleTransferService(
             CheckTrueFalse(c, path, Add);
             CheckFillBlanks(c, path, Add);
             CheckOrdering(c, path, Add);
+            if (c.Crossword is not null)
+            {
+                if (string.IsNullOrWhiteSpace(c.Crossword.Word) && string.IsNullOrWhiteSpace(c.Crossword.Clue))
+                    Add($"{path}.crossword", "invalid_crossword_entry", "Quando enviado, o objeto crossword precisa conter palavra e definição.");
+                foreach (var (field, messages) in CrosswordEntryRules.Validate(c.Crossword.Word, c.Crossword.Clue, $"{path}.crossword"))
+                    foreach (var message in messages) Add(field, "invalid_crossword_entry", message);
+            }
         }
 
         if (externalIds.Contains(module.ExternalId)) Add("module.externalId", "duplicate_external_id", "O ID externo do módulo deve ser distinto dos IDs dos conceitos.");
