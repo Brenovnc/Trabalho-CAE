@@ -20,7 +20,6 @@ export type ExposureActivity = {
   presentationId: string
   type: 'EXPOSURE'
   conceptId: string
-  conceptName: string
   startedAtUtc: string
   payload: {
     keywordCount: number
@@ -33,7 +32,6 @@ export type TrueFalseActivity = {
   presentationId: string
   type: 'TRUE_FALSE'
   conceptId: string
-  conceptName: string
   startedAtUtc: string
   payload: { statement: string }
 }
@@ -41,7 +39,6 @@ export type FillBlankActivity = {
   presentationId: string
   type: 'FILL_BLANK'
   conceptId: string
-  conceptName: string
   startedAtUtc: string
   payload: { text: string; slotNumbers: number[]; options: string[] }
 }
@@ -49,7 +46,6 @@ export type GuessConceptActivity = {
   presentationId: string
   type: 'GUESS_CONCEPT'
   conceptId: string
-  conceptName: string
   startedAtUtc: string
   payload: { clueCount: number; clues: string[] }
 }
@@ -57,7 +53,6 @@ export type OrderingActivity = {
   presentationId: string
   type: 'ORDERING'
   conceptId: string
-  conceptName: string
   startedAtUtc: string
   payload: { instruction: string; items: { id: string; text: string }[] }
 }

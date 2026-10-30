@@ -137,7 +137,7 @@ export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthoriz
   return <main className={styles.page}>
     <header className={styles.header}><button type="button" onClick={() => onNavigate('/student')}>← Módulos</button><button type="button" onClick={onLogout}>Sair</button><button type="button" disabled={busy} onClick={() => void abandon()}>Abandonar sessão</button></header>
     <section className={styles.card} aria-labelledby="session-title">
-      <div className={styles.sessionTop}><div><p className={styles.eyebrow}>Sessão de estudo</p><h1 id="session-title">{activity?.conceptName ?? 'Módulo de estudo'}</h1></div>{activity && <SessionTimer startedAtUtc={activity.startedAtUtc} />}</div>
+      <div className={styles.sessionTop}><div><p className={styles.eyebrow}>Atividade atual</p><h1 id="session-title">Sessão de estudo</h1></div>{activity && <SessionTimer startedAtUtc={activity.startedAtUtc} />}</div>
       <p className={styles.progress} aria-live="polite">{session.completedActivities + (activity ? 1 : 0)} de {Math.max(session.totalActivities, session.completedActivities + (activity ? 1 : 0))} atividades</p>
       {notice && <p className={styles.notice} role="status">{notice}</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}

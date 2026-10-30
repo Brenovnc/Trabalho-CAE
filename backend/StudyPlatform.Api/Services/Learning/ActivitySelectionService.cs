@@ -89,7 +89,7 @@ public sealed class ActivitySelectionService(
                 ? practiceUsage.GetValueOrDefault(concept.Id)
                 : GetTier(learningState, state, now);
             var types = session.Mode == StudySessionMode.FreePractice
-                ? Enum.GetValues<ActivityType>()
+                ? Enum.GetValues<ActivityType>().Where(type => type != ActivityType.Exposure)
                 : compatibility.GetCompatibleTypes(learningState == LearningState.New ? LearningState.Exposure : learningState);
             foreach (var type in types)
             {
@@ -105,16 +105,14 @@ public sealed class ActivitySelectionService(
         var previousConceptId = await db.SessionActivityPresentations.AsNoTracking()
             .Where(x => x.StudySessionId == session.Id).OrderByDescending(x => x.SequenceNumber)
             .Select(x => (Guid?)x.ConceptId).FirstOrDefaultAsync(ct);
-        var ordered = session.Mode == StudySessionMode.FreePractice
-            ? candidates.OrderBy(c => c.Tier).ThenBy(c => c.Concept.Id).ThenBy(c => c.Type).ThenBy(c => c.ActivityId)
-            : candidates.OrderBy(c => c.Tier)
+        var ordered = candidates.OrderBy(c => c.Tier)
             .ThenBy(c => c.Tier == 0 ? c.State?.DueAtUtc : null)
             .ThenByDescending(c => c.Tier == 1 ? c.State?.LastFailureAtUtc : null)
             .ThenBy(c => c.Type == PrimaryType(c.State?.LearningState ?? LearningState.New) ? 0 : 1)
             .ThenBy(c => c.Concept.Id)
             .ThenBy(c => c.ActivityId);
         var chosen = session.Mode == StudySessionMode.FreePractice
-            ? ordered.FirstOrDefault(c => c.Concept.Id != previousConceptId) ?? ordered.First()
+            ? ChooseFreePracticeCandidate(candidates, previousConceptId)
             : ordered.FirstOrDefault(c => c.Tier != candidates.Min(x => x.Tier) || c.Concept.Id != previousConceptId)
                 ?? ordered.First();
 
@@ -139,6 +137,18 @@ public sealed class ActivitySelectionService(
         return presentation;
     }
 
+    private static Candidate ChooseFreePracticeCandidate(IReadOnlyCollection<Candidate> candidates, Guid? previousConceptId)
+    {
+        var alternatives = candidates.Where(candidate => candidate.Concept.Id != previousConceptId).ToArray();
+        var available = alternatives.Length > 0 ? alternatives : candidates.ToArray();
+        var leastUsedTier = available.Min(candidate => candidate.Tier);
+        var leastUsed = available.Where(candidate => candidate.Tier == leastUsedTier).ToArray();
+        var types = leastUsed.Select(candidate => candidate.Type).Distinct().ToArray();
+        var selectedType = types[Random.Shared.Next(types.Length)];
+        var sameType = leastUsed.Where(candidate => candidate.Type == selectedType).ToArray();
+        return sameType[Random.Shared.Next(sameType.Length)];
+    }
+
     public PresentedActivityResponse MapPublic(SessionActivityPresentation presentation)
     {
         var snapshot = JsonSerializer.Deserialize<ActivitySnapshot>(presentation.SnapshotJson, JsonOptions)
@@ -158,7 +168,7 @@ public sealed class ActivitySelectionService(
             _ => throw new InvalidOperationException("Unknown saved activity type."),
         };
         using var document = JsonDocument.Parse(JsonSerializer.Serialize(payload, JsonOptions));
-        return new PresentedActivityResponse(presentation.Id, snapshot.Type, presentation.ConceptId, snapshot.ConceptName, presentation.StartedAtUtc, document.RootElement.Clone());
+        return new PresentedActivityResponse(presentation.Id, snapshot.Type, presentation.ConceptId, presentation.StartedAtUtc, document.RootElement.Clone());
     }
 
 

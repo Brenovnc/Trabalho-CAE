@@ -42,6 +42,7 @@ public sealed class StudySessionTests : IAsyncLifetime
         var service = ResolveService(scope.ServiceProvider);
         var start = await service.StartAsync(ids.StudentId, ids.ModuleId, default);
         Assert.Equal("EXPOSURE", start.Activity!.Type);
+        Assert.DoesNotContain("\"ConceptName\"", JsonSerializer.Serialize(start.Activity), StringComparison.Ordinal);
         Assert.Empty(start.Activity.Payload.GetProperty("revealedKeywords").EnumerateArray());
         Assert.DoesNotContain("domain name", start.Activity.Payload.GetRawText(), StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("IP address", start.Activity.Payload.GetRawText(), StringComparison.OrdinalIgnoreCase);
@@ -82,6 +83,7 @@ public sealed class StudySessionTests : IAsyncLifetime
         var prerequisite = await db.Concepts.SingleAsync(concept => concept.Id == ids.ConceptId);
         var dependent = new Concept { ModuleId = ids.ModuleId, Name = "Blocked in normal mode", Definition = "Dependent concept." };
         dependent.Keywords.Add(new ConceptKeyword { Value = "dependent" });
+        dependent.RecognitionActivities.Add(new RecognitionActivity { Statement = "This is a practice statement.", IsCorrect = true, Explanation = "Practice feedback." });
         db.Concepts.Add(dependent);
         db.ConceptPrerequisites.Add(new ConceptPrerequisite { Concept = dependent, PrerequisiteConceptId = prerequisite.Id, ModuleId = ids.ModuleId });
         var classroomId = await db.Students.Where(student => student.Id == ids.StudentId).Select(student => student.ClassroomId).SingleAsync();
@@ -114,11 +116,10 @@ public sealed class StudySessionTests : IAsyncLifetime
         var practice = await service.StartAsync(ids.StudentId, ids.ModuleId, default, StudySessionMode.FreePractice, dependent.Id);
         Assert.Equal("FREE_PRACTICE", practice.Mode);
         Assert.Equal(dependent.Id, practice.Activity!.ConceptId);
-        Assert.Equal("EXPOSURE", practice.Activity.Type);
+        Assert.Equal("TRUE_FALSE", practice.Activity.Type);
         Assert.Equal("ACTIVE", practice.Status);
         var current = practice.Activity;
-        await service.RevealNextHintAsync(ids.StudentId, practice.SessionId, current.PresentationId, default);
-        var result = await service.SubmitAsync(ids.StudentId, practice.SessionId, Request(current, "EXPOSURE", new { completed = true }), default);
+        var result = await service.SubmitAsync(ids.StudentId, practice.SessionId, Request(current, "TRUE_FALSE", new { choice = true }), default);
         Assert.True(result.WasCorrect);
         Assert.Equal("FREE_PRACTICE", result.LearningState);
         Assert.Equal(before, StateSnapshot(await db.StudentConceptStates.SingleAsync(state => state.StudentId == ids.StudentId && state.ConceptId == dependent.Id)));
@@ -136,6 +137,48 @@ public sealed class StudySessionTests : IAsyncLifetime
         Assert.Equal(LearningState.Mastered, (await db.StudentConceptStates.SingleAsync(state => state.StudentId == otherStudent.Id && state.ConceptId == dependent.Id)).LearningState);
         Assert.Equal(LearningState.Recognition, (await db.StudentConceptStates.SingleAsync(state => state.StudentId == ids.StudentId && state.ConceptId == otherConcept.Id)).LearningState);
     }
+
+    [Fact]
+    public async Task FreePracticeNeverPresentsExposureAndUsesOtherAvailableActivityTypes()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var service = ResolveService(scope.ServiceProvider);
+        var session = await service.StartAsync(ids.StudentId, ids.ModuleId, default, StudySessionMode.FreePractice);
+        var activity = session.Activity;
+        var presentedTypes = new HashSet<string>();
+
+        while (activity is not null)
+        {
+            Assert.NotEqual("EXPOSURE", activity.Type);
+            presentedTypes.Add(activity.Type);
+            var answer = PracticeAnswer(activity);
+            var result = await service.SubmitAsync(ids.StudentId, session.SessionId,
+                Request(activity, activity.Type, answer), default);
+            activity = result.NextActivity;
+        }
+
+        Assert.Contains("TRUE_FALSE", presentedTypes);
+        Assert.Contains("FILL_BLANK", presentedTypes);
+        Assert.Contains("GUESS_CONCEPT", presentedTypes);
+        Assert.Contains("ORDERING", presentedTypes);
+    }
+
+    private static object PracticeAnswer(PresentedActivityResponse activity) => activity.Type switch
+    {
+        "TRUE_FALSE" => new { choice = false },
+        "FILL_BLANK" => new
+        {
+            answers = activity.Payload.GetProperty("slotNumbers").EnumerateArray()
+                .Select(slot => new { slotNumber = slot.GetInt32(), text = "incorrect" }).ToArray(),
+        },
+        "GUESS_CONCEPT" => new { text = "incorrect" },
+        "ORDERING" => new
+        {
+            itemIds = activity.Payload.GetProperty("items").EnumerateArray()
+                .Reverse().Select(item => item.GetProperty("id").GetGuid()).ToArray(),
+        },
+        _ => throw new InvalidOperationException($"Unexpected practice activity: {activity.Type}"),
+    };
 
     private static object StateSnapshot(StudentConceptState state) => new
     {

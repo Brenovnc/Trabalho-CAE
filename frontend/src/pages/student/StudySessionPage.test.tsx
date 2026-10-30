@@ -10,7 +10,7 @@ const studyMocks = vi.hoisted(() => ({ getModule: vi.fn(), getSession: vi.fn(), 
 vi.mock('../../services/studyApi', () => ({ studyApi: studyMocks }))
 
 const baseActivity: StudyActivity = {
-  presentationId: 'p1', conceptId: 'c1', conceptName: 'DNS', startedAtUtc: '2026-09-27T12:00:00Z',
+  presentationId: 'p1', conceptId: 'c1', startedAtUtc: '2026-09-27T12:00:00Z',
   type: 'TRUE_FALSE', payload: { statement: 'DNS resolves names.' },
 }
 const activeSession: StudySession = {
@@ -33,6 +33,8 @@ describe('student session page', () => {
       correctAnswer: null,
     })
     render(<StudySessionPage {...props} />)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Sessão de estudo' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { level: 1, name: 'DNS' })).toBeNull()
     expect(await screen.findByText('DNS resolves names.')).toBeTruthy()
     expect(screen.getByLabelText(/Tempo nesta atividade/)).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Verdadeiro' }))

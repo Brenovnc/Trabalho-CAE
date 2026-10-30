@@ -6,7 +6,7 @@ import { formatElapsed } from '../components/SessionTimer'
 import type { StudyActivity } from '../types/learning'
 
 afterEach(() => vi.useRealTimers())
-const base = { presentationId: 'presentation', conceptId: 'concept', conceptName: 'DNS', startedAtUtc: '2026-09-27T12:00:00Z' }
+const base = { presentationId: 'presentation', conceptId: 'concept', startedAtUtc: '2026-09-27T12:00:00Z' }
 const props = { busy: false, onReveal: async () => {}, onSubmit: () => {} }
 
 describe('student minigame rendering and timer', () => {

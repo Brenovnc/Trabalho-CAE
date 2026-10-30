@@ -9,7 +9,7 @@ import { GuessConceptGame } from './guess-concept/GuessConceptGame'
 import { OrderingGame } from './ordering/OrderingGame'
 import type { ExposureActivity, FillBlankActivity, GuessConceptActivity, OrderingActivity, TrueFalseActivity } from '../types/learning'
 
-const base = { presentationId: 'p1', conceptId: 'c1', conceptName: 'DNS', startedAtUtc: '2026-09-27T12:00:00Z' }
+const base = { presentationId: 'p1', conceptId: 'c1', startedAtUtc: '2026-09-27T12:00:00Z' }
 
 describe('minigame interactions', () => {
   it('reveals exposure through API callback and only enables completion after all keywords are returned', async () => {
