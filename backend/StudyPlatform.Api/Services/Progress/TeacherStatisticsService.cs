@@ -66,8 +66,8 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         var attempts = await GetAttemptsAsync(scope.Students.Select(item => item.Id).ToArray(), scope.ModuleIds, range, ct);
         var filteredAttempts = FilterAttempts(attempts, filterType);
         return new ClassroomStatisticsResponse(Distribution(scope.Students, scope.Concepts, states),
-            Daily(filteredAttempts, range), TypeStatistics(attempts),
-            ErrorConcepts(filteredAttempts, minAttempts), ProgressBands(scope.Students, scope.Concepts, states));
+            Daily(filteredAttempts, range), TypeStatistics(attempts, filterType),
+            ErrorConcepts(filteredAttempts, minAttempts, filterType), ProgressBands(scope.Students, scope.Concepts, states));
     }
 
     public async Task<StudentStatisticsResponse> GetStudentAsync(Guid teacherId, Guid classroomId, Guid studentId,
@@ -87,7 +87,7 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         var attempts = await GetAttemptsAsync([student.Id], moduleIds, range, ct);
         var filteredAttempts = FilterAttempts(attempts, filterType);
         return new StudentStatisticsResponse(Distribution([student], concepts, states),
-            Daily(filteredAttempts, range), TypeStatistics(attempts), ErrorConcepts(filteredAttempts, 3));
+            Daily(filteredAttempts, range), TypeStatistics(attempts, filterType), ErrorConcepts(filteredAttempts, 3, filterType));
     }
 
     private async Task<ClassroomData> GetClassroomDataAsync(Guid classroomId, Guid? requestedModuleId, bool activeStudentsOnly, CancellationToken ct)
@@ -152,8 +152,8 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         }).ToArray();
     }
 
-    private static IReadOnlyList<ActivityTypeStatistics> TypeStatistics(List<AttemptInfo> attempts) =>
-        ScoredTypes.Select(type =>
+    private static IReadOnlyList<ActivityTypeStatistics> TypeStatistics(List<AttemptInfo> attempts, ActivityType? filterType) =>
+        ScoredTypes.Where(type => filterType is null || type == filterType).Select(type =>
         {
             var matching = attempts.Where(item => item.Type == type).ToArray();
             var label = type switch
@@ -168,8 +168,8 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
                 matching.Length == 0 ? null : Percent(matching.Count(item => item.WasCorrect), matching.Length));
         }).ToArray();
 
-    private static IReadOnlyList<ErrorConceptStatistics> ErrorConcepts(List<AttemptInfo> attempts, int minAttempts) =>
-        attempts.Where(item => ScoredTypes.Contains(item.Type)).GroupBy(item => new { item.ConceptId, item.Name })
+    private static IReadOnlyList<ErrorConceptStatistics> ErrorConcepts(List<AttemptInfo> attempts, int minAttempts, ActivityType? filterType) =>
+        attempts.Where(item => ScoredTypes.Contains(item.Type) && (filterType is null || item.Type == filterType)).GroupBy(item => new { item.ConceptId, item.Name })
             .Select(group => new { group.Key.ConceptId, group.Key.Name, Attempts = group.Count(), Errors = group.Count(item => !item.WasCorrect) })
             .Where(item => item.Attempts >= minAttempts)
             .OrderByDescending(item => item.Errors / (double)item.Attempts).ThenByDescending(item => item.Attempts)

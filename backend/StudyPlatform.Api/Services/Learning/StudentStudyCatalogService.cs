@@ -8,6 +8,15 @@ namespace StudyPlatform.Api.Services.Learning;
 
 public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProvider? timeProvider = null)
 {
+    public async Task<StudyPlatform.Api.Models.TeacherPhoto?> GetTeacherPhotoAsync(Guid studentId, Guid moduleId, CancellationToken ct)
+    {
+        var classroomId = await GetActiveClassroomIdAsync(studentId, ct);
+        var teacherId = await db.ClassroomModules.AsNoTracking()
+            .Where(link => link.ClassroomId == classroomId && link.ModuleId == moduleId && link.Module.Status == ModuleStatus.Published)
+            .Select(link => (Guid?)link.Module.TeacherId).SingleOrDefaultAsync(ct)
+            ?? throw new ApiException(404, "student_module_not_found", "O módulo não foi encontrado.");
+        return await db.TeacherPhotos.AsNoTracking().SingleOrDefaultAsync(photo => photo.TeacherId == teacherId, ct);
+    }
     public async Task<IReadOnlyList<StudentModuleResponse>> ListModulesAsync(Guid studentId, CancellationToken ct)
     {
         var classroomId = await GetActiveClassroomIdAsync(studentId, ct);
@@ -15,12 +24,14 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
             .Where(assignment => assignment.ClassroomId == classroomId && assignment.Module.Status == ModuleStatus.Published)
             .OrderBy(assignment => assignment.Module.Title)
             .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject,
-                assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview })
+                assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview,
+                TeacherName = assignment.Module.Teacher.Name, TeacherInstitution = assignment.Module.Teacher.Institution,
+                TeacherPhotoVersion = db.TeacherPhotos.Where(photo => photo.TeacherId == assignment.Module.TeacherId).Select(photo => (DateTime?)photo.UpdatedAtUtc).FirstOrDefault() })
             .ToListAsync(ct);
         var results = new List<StudentModuleResponse>(modules.Count);
         foreach (var module in modules)
             results.Add(await BuildResponseAsync(studentId, module.Id, module.Title, module.Description, module.Subject,
-                module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, ct));
+                module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, module.TeacherName, module.TeacherInstitution, module.TeacherPhotoVersion?.Ticks, ct));
         return results;
     }
 
@@ -31,15 +42,17 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
             .Where(assignment => assignment.ClassroomId == classroomId && assignment.ModuleId == moduleId
                 && assignment.Module.Status == ModuleStatus.Published)
             .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject,
-                assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview })
+                assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview,
+                TeacherName = assignment.Module.Teacher.Name, TeacherInstitution = assignment.Module.Teacher.Institution,
+                TeacherPhotoVersion = db.TeacherPhotos.Where(photo => photo.TeacherId == assignment.Module.TeacherId).Select(photo => (DateTime?)photo.UpdatedAtUtc).FirstOrDefault() })
             .SingleOrDefaultAsync(ct)
             ?? throw new ApiException(404, "student_module_not_found", "O módulo não foi encontrado.");
         return await BuildResponseAsync(studentId, module.Id, module.Title, module.Description, module.Subject,
-            module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, ct);
+            module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, module.TeacherName, module.TeacherInstitution, module.TeacherPhotoVersion?.Ticks, ct);
     }
 
     private async Task<StudentModuleResponse> BuildResponseAsync(Guid studentId, Guid moduleId, string title, string? description, string subject,
-        bool crosswordEnabled, bool crosswordAllowAllWords, bool allowAdvanceReview, CancellationToken ct)
+        bool crosswordEnabled, bool crosswordAllowAllWords, bool allowAdvanceReview, string teacherName, string? teacherInstitution, long? teacherPhotoVersion, CancellationToken ct)
     {
         var concepts = await db.Concepts.AsNoTracking().Where(concept => concept.ModuleId == moduleId && concept.IsActive)
             .OrderBy(concept => concept.Name).Select(concept => new StudentModuleConceptOption(concept.Id, concept.Name)).ToListAsync(ct);
@@ -62,7 +75,7 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
         return new StudentModuleResponse(moduleId, title, description, subject, activeSession?.Id,
             activeConceptCount, mastered, learning, notStarted, pending, progress, nextReview,
             activeSession?.Mode == StudySessionMode.FreePractice ? "FREE_PRACTICE" : activeSession is null ? null : "NORMAL", concepts,
-            crosswordEnabled, crosswordEnabled && crosswordAllowAllWords, allowAdvanceReview);
+            crosswordEnabled, crosswordEnabled && crosswordAllowAllWords, allowAdvanceReview, null, teacherName, teacherInstitution, teacherPhotoVersion);
     }
 
     private async Task<Guid> GetActiveClassroomIdAsync(Guid studentId, CancellationToken ct) =>

@@ -262,14 +262,13 @@ export function ModulesPage() {
 }
 
 function ModuleFeatureFields({ value, onChange }: { value: ModuleInput; onChange: (value: ModuleInput) => void }) {
-  return <fieldset className={styles.featureOptions}>
-    <legend>Recursos para o aluno</legend>
-    <label className={styles.check}><input type="checkbox" checked={value.crosswordEnabled ?? false} onChange={event => onChange({ ...value, crosswordEnabled: event.target.checked, crosswordAllowAllWords: event.target.checked ? value.crosswordAllowAllWords : false })} />Habilitar cruzadinha</label>
-    <label className={styles.check}><input type="checkbox" checked={value.crosswordAllowAllWords ?? false} disabled={!value.crosswordEnabled} onChange={event => onChange({ ...value, crosswordAllowAllWords: event.target.checked })} />Permitir que o aluno use todas as palavras do módulo na cruzadinha</label>
-    <label className={styles.check}><input type="checkbox" checked={value.allowAdvanceReview ?? false} onChange={event => onChange({ ...value, allowAdvanceReview: event.target.checked })} />Permitir que o aluno adiante a próxima sessão</label>
-  </fieldset>
+  return <section className={styles.featureCard} aria-labelledby="module-features-title">
+    <h3 id="module-features-title">Recursos para o aluno</h3>
+    <label className={styles.featureRow}><span><strong>Cruzadinha</strong><small>Jogo alternativo de estudo montado com as palavras cadastradas nos conceitos.</small></span><input role="switch" type="checkbox" checked={value.crosswordEnabled ?? false} onChange={event => onChange({ ...value, crosswordEnabled: event.target.checked, crosswordAllowAllWords: event.target.checked ? value.crosswordAllowAllWords : false })} /></label>
+    <label className={styles.featureRow} data-disabled={!value.crosswordEnabled}><span><strong>Usar todas as palavras</strong><small>O aluno pode alternar entre usar só conceitos dominados ou todas as palavras do módulo.</small></span><input role="switch" type="checkbox" checked={value.crosswordAllowAllWords ?? false} disabled={!value.crosswordEnabled} onChange={event => onChange({ ...value, crosswordAllowAllWords: event.target.checked })} /></label>
+    <label className={styles.featureRow}><span><strong>Adiantar próxima sessão</strong><small>O aluno pode antecipar as revisões agendadas para fazê-las agora.</small></span><input role="switch" type="checkbox" checked={value.allowAdvanceReview ?? false} onChange={event => onChange({ ...value, allowAdvanceReview: event.target.checked })} /></label>
+  </section>
 }
-
 function ModuleFields({ value, onChange, onSubmit, busy }: { value: ModuleInput; onChange: (value: ModuleInput) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void; busy: boolean }) {
   return <form className={styles.formGrid} onSubmit={onSubmit}>
     <label>Título<input required maxLength={160} value={value.title} onChange={event => onChange({ ...value, title: event.target.value })} /></label>

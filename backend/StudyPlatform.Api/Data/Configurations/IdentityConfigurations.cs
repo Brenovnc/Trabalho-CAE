@@ -9,6 +9,8 @@ public sealed class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
     public void Configure(EntityTypeBuilder<Teacher> builder)
     {
         builder.ToTable("Teachers");
+        builder.Property(x => x.Education).HasMaxLength(160);
+        builder.Property(x => x.Institution).HasMaxLength(160);
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasMaxLength(120).IsRequired();
         builder.Property(x => x.Email).HasMaxLength(320).IsRequired();
@@ -25,6 +27,19 @@ public sealed class TeacherConfiguration : IEntityTypeConfiguration<Teacher>
             .WithOne(x => x.Teacher)
             .HasForeignKey(x => x.TeacherId)
             .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public sealed class TeacherPhotoConfiguration : IEntityTypeConfiguration<TeacherPhoto>
+{
+    public void Configure(EntityTypeBuilder<TeacherPhoto> builder)
+    {
+        builder.ToTable("TeacherPhotos");
+        builder.HasKey(x => x.TeacherId);
+        builder.Property(x => x.Data).IsRequired();
+        builder.Property(x => x.ContentType).HasMaxLength(32).IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).IsRequired();
+        builder.HasOne(x => x.Teacher).WithOne(x => x.Photo).HasForeignKey<TeacherPhoto>(x => x.TeacherId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 

@@ -8,6 +8,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     : DbContext(options)
 {
     public DbSet<Teacher> Teachers => Set<Teacher>();
+    public DbSet<TeacherPhoto> TeacherPhotos => Set<TeacherPhoto>();
     public DbSet<Student> Students => Set<Student>();
     public DbSet<Classroom> Classrooms => Set<Classroom>();
     public DbSet<Module> Modules => Set<Module>();

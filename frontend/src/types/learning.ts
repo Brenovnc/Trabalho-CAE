@@ -17,6 +17,9 @@
   crosswordAllowAllWords?: boolean
   allowAdvanceReview?: boolean
   advanceReviewPerformed?: boolean | null
+  teacherName?: string | null
+  teacherInstitution?: string | null
+  teacherPhotoVersion?: number | null
 }
 
 export type StudentCrosswordEntry = { id: string; word: string; clue: string }

@@ -18,6 +18,9 @@ public sealed record StudentModuleResponse(
     bool CrosswordEnabled = false,
     bool CrosswordAllowAllWords = false,
     bool AllowAdvanceReview = false,
-    bool? AdvanceReviewPerformed = null);
+    bool? AdvanceReviewPerformed = null,
+    string? TeacherName = null,
+    string? TeacherInstitution = null,
+    long? TeacherPhotoVersion = null);
 
 public sealed record StudentModuleConceptOption(Guid Id, string Name);

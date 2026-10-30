@@ -53,6 +53,7 @@ builder.Services.AddScoped<StudentCrosswordService>();
 builder.Services.AddScoped<AdvanceReviewService>();
 builder.Services.AddScoped<TeacherProgressService>();
 builder.Services.AddScoped<TeacherStatisticsService>();
+builder.Services.AddScoped<TeacherProfileService>();
 builder.Services.AddScoped<IPasswordHasher<Teacher>, PasswordHasher<Teacher>>();
 builder.Services.AddScoped<IPasswordHasher<Student>, PasswordHasher<Student>>();
 builder.Services.AddScoped<ApiCookieAuthenticationEvents>();

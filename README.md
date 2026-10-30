@@ -133,3 +133,7 @@ O dashboard conta módulos não arquivados do professor, turmas ativas e alunos 
 Recursos adicionais de integração: módulos podem habilitar opcionalmente cruzadinha (com palavras limitadas a conceitos dominados ou a todos os conceitos ativos) e permitir adiantar revisões; as páginas de acompanhamento exibem estatísticas agregadas nos períodos de 7, 30 ou 90 dias. Arrastar itens no preenchimento e na ordenação é suportado por mouse, toque e teclado.
 
 Não há seed de demonstração, recuperação por e-mail, chaves de cookie persistidas em Development ou inspeção automática entre navegadores. Não são parte do MVP cruzadinha, matching, simulações/diagramas, ranking, gamificação, analytics avançado, notificações, modo offline/PWA, compartilhamento/biblioteca pública ou IA. Consulte docs/manual-validation.md para a sequência de verificação manual, incluindo desktop e celular.
+
+## PERE e área do professor
+
+A interface usa a identidade PERE (Plataforma Educacional de Repetição Espaçada). Professores acessam Página inicial, Dashboard, Módulos e Turmas pela navegação superior; o menu do perfil reúne Meu perfil e Sair. Em Meu perfil é possível atualizar nome, formação e instituição, alterar a senha e enviar/remover uma foto PNG, JPEG ou WebP de até 2 MiB. A foto é redimensionada no navegador antes do envio e fica associada à conta do professor. O dashboard reúne filtros e gráficos por turma; detalhes do progresso continuam protegidos por propriedade e papel.

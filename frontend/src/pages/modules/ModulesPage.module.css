@@ -50,6 +50,13 @@
 .conceptForm small { color:#aab2c5; font-weight:400; }
 .page fieldset { min-width:0; border:1px solid #3b4558; border-radius:.7rem; padding:1rem; }
 .featureOptions { grid-column:1/-1; }
+.featureCard { grid-column:1/-1; border:1px solid #303747; border-radius:1rem; padding:1rem 1.2rem; background:#191e29; }
+.featureCard h3 { margin:.1rem 0 .7rem; }
+.featureRow { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem .2rem; border-top:1px solid #303747; color:#e4e8f1; cursor:pointer; }
+.featureRow span { display:grid; gap:.2rem; }
+.featureRow small { color:#aeb8cc; font-weight:400; line-height:1.45; }
+.featureRow input { flex:0 0 auto; width:2.5rem!important; height:1.35rem; accent-color:#858dff; }
+.featureRow[data-disabled=true] { opacity:.48; }
 .page legend { padding:0 .35rem; color:#dce1f0; font-weight:650; }
 .check { display:flex; align-items:center; gap:.5rem; margin:.45rem 0; color:#d8deec; }
 .check input { width:auto; }

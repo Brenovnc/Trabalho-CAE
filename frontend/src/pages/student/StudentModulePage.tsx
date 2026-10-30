@@ -4,6 +4,7 @@ import { studyApi } from '../../services/studyApi'
 import type { StudentModule } from '../../types/learning'
 import styles from './StudentPages.module.css'
 import { errorMessage } from './StudentModulesPage'
+import { TeacherBadge } from '../../components/TeacherBadge'
 
 type Props = { moduleId: string; startFreePracticeRequested?: boolean; onNavigate: (path: string, replace?: boolean) => void; onLogout: () => void; onUnauthorized: () => void }
 export function StudentModulePage({ moduleId, startFreePracticeRequested = false, onNavigate, onLogout, onUnauthorized }: Props) {
@@ -94,7 +95,9 @@ export function StudentModulePage({ moduleId, startFreePracticeRequested = false
     {error && <p role="alert">{error}</p>}
     {module && <>
       <section className={styles.card}>
-        <p className={styles.subject}>{module.subject}</p><h1>{module.title}</h1>
+        <div className={styles.moduleHeading}><div><p className={styles.subject}>{module.subject}</p><h1>{module.title}</h1></div>
+          <TeacherBadge moduleId={module.id} name={module.teacherName} institution={module.teacherInstitution} photoVersion={module.teacherPhotoVersion} size={56} />
+        </div>
         {module.description && <p>{module.description}</p>}
         <section className={styles.progressSummary} aria-labelledby="official-progress-title">
           <h2 id="official-progress-title">Seu progresso oficial</h2>

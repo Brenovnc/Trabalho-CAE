@@ -21,6 +21,15 @@ public sealed class StudySessionsController(StudySessionService sessions, Studen
     public async Task<ActionResult<StudentModuleResponse>> GetModule(Guid moduleId, CancellationToken ct) =>
         Ok(await catalog.GetModuleAsync(StudentId, moduleId, ct));
 
+    [HttpGet("modules/{moduleId:guid}/teacher-photo")]
+    public async Task<IActionResult> GetTeacherPhoto(Guid moduleId, CancellationToken ct)
+    {
+        var photo = await catalog.GetTeacherPhotoAsync(StudentId, moduleId, ct);
+        if (photo is null) return NotFound();
+        Response.Headers.CacheControl = "private, max-age=86400";
+        return File(photo.Data, photo.ContentType);
+    }
+
     [HttpGet("modules/{moduleId:guid}/crossword")]
     public async Task<ActionResult<IReadOnlyList<StudentCrosswordEntryResponse>>> GetCrossword(Guid moduleId, [FromQuery] bool allWords = false, CancellationToken ct = default) =>
         Ok(await crosswords.GetAsync(StudentId, moduleId, allWords, ct));

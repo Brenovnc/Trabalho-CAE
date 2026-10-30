@@ -1,6 +1,7 @@
 import type { ApiErrorBody, AuthenticatedUser, AuthMode } from '../types/auth'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
+export function apiUrl(path: string) { return `${apiBaseUrl}${path}` }
 let csrfToken: string | null = null
 
 export class ApiRequestError extends Error {
@@ -52,11 +53,11 @@ export async function requestApi<T>(path: string, method = 'GET', body?: unknown
   }
   return parseResponse<T>(await fetch(`${apiBaseUrl}${path}`, init))
 }
-export async function requestFormApi<T>(path: string, form: FormData): Promise<T> {
+export async function requestFormApi<T>(path: string, form: FormData, method = 'POST'): Promise<T> {
   if (!csrfToken) await prepareCsrfToken()
   const headers = new Headers({ 'X-CSRF-TOKEN': csrfToken! })
   return parseResponse<T>(await fetch(`${apiBaseUrl}${path}`, {
-    method: 'POST', credentials: 'include', headers, body: form,
+    method, credentials: 'include', headers, body: form,
   }))
 }
 export function getCurrentUser(): Promise<AuthenticatedUser> {

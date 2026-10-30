@@ -3,6 +3,7 @@ import { ApiRequestError } from '../../services/authApi'
 import { studyApi } from '../../services/studyApi'
 import type { StudentModule } from '../../types/learning'
 import styles from './StudentPages.module.css'
+import { TeacherBadge } from '../../components/TeacherBadge'
 
 type Props = { onNavigate: (path: string, replace?: boolean) => void; onLogout: () => void; onUnauthorized: () => void }
 export function StudentModulesPage({ onNavigate, onLogout, onUnauthorized }: Props) {
@@ -30,7 +31,7 @@ export function StudentModulesPage({ onNavigate, onLogout, onUnauthorized }: Pro
     {!loading && !error && modules.length === 0 && <section className={styles.card}><h2>Nenhum módulo disponível</h2><p>Quando sua turma tiver um módulo publicado, ele aparecerá aqui.</p></section>}
     <div className={styles.moduleGrid}>
       {orderedModules.map(module => <article className={`${styles.card} ${module.pendingReviews > 0 ? styles.pendingCard : ''}`} key={module.id}>
-        <p className={styles.subject}>{module.subject}</p><h2>{module.title}</h2>
+        <div className={styles.studentModuleHeading}><div><p className={styles.subject}>{module.subject}</p><h2>{module.title}</h2></div><TeacherBadge moduleId={module.id} name={module.teacherName} institution={module.teacherInstitution} photoVersion={module.teacherPhotoVersion} size={48} /></div>
         {module.description && <p>{module.description}</p>}
         {module.pendingReviews > 0 && <p className={styles.pendingNotice}><span aria-hidden="true">!</span><span>{module.pendingReviews} {module.pendingReviews === 1 ? 'revisão pendente' : 'revisões pendentes'}</span></p>}
         <button type="button" onClick={() => onNavigate(module.activeSessionId ? `/student/sessions/${module.activeSessionId}` : `/student/modules/${module.id}`)}>
