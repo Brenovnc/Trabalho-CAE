@@ -1,7 +1,10 @@
 ﻿.sentence { font-size: 1.15rem; line-height: 2.8; }
 .slot { min-width: 8rem; margin: 0 .25rem; border: 1px dashed #9ca8ff; border-radius: .4rem; padding: .45rem; color: #fff; background: #20283b; cursor: pointer; }
-.options, .removeList { display: flex; flex-wrap: wrap; gap: .6rem; padding: 0; list-style: none; }
-.options button, .removeList button { min-height: 2.75rem; padding: .55rem .8rem; }
+.options { display: flex; flex-wrap: wrap; gap: .6rem; padding: 0; list-style: none; }
+.options button { min-height: 2.75rem; padding: .55rem .8rem; }
+.options button[aria-pressed="true"] { border-color:#b6beff; background:#343e5c; outline:2px solid #b6beff; outline-offset:1px; }
+.options button:disabled { opacity:.35; text-decoration:line-through; cursor:not-allowed; border-style:dashed; filter:grayscale(.6); }
+.slotSelectable { border-color:#d2d8ff; border-style:dashed; }
 .slotTarget { display:inline-flex; position:relative; min-height:2.75rem; vertical-align:middle; }
 .slotTarget .slot { min-height:2.75rem; }
 .dropTarget .slot { outline:3px solid #b6beff; outline-offset:2px; background:#343e5c; }

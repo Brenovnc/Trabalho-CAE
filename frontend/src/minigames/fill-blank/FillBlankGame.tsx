@@ -21,17 +21,29 @@ export function FillBlankGame({ activity, disabled, onSubmit }: Props) {
   )
 
   function chooseSlot(slotNumber: number) {
-    if (selectedOption === null || disabled) return
-    setAssignment(current => assignOption(current, slotNumber, selectedOption))
-    setSelectedOption(null)
+    if (disabled) return
+    if (selectedOption !== null) {
+      setAssignment(current => assignOption(current, slotNumber, selectedOption))
+      setSelectedOption(null)
+    } else if (assignment[slotNumber] !== undefined) {
+      setAssignment(current => Object.fromEntries(Object.entries(current).filter(([key]) => Number(key) !== slotNumber)) as SlotAssignment)
+    }
   }
 
   function dropOption(event: DragEndEvent) {
-    if (disabled || !event.over) return
+    if (disabled) return
+    const activeId = String(event.active.id)
+    if (activeId.startsWith('assigned:')) {
+      const source = Number(activeId.slice(9))
+      if (!event.over || !String(event.over.id).startsWith('drop:')) {
+        setAssignment(current => Object.fromEntries(Object.entries(current).filter(([slot]) => Number(slot) !== source)) as SlotAssignment)
+        return
+      }
+    }
+    if (!event.over) return
     const overId = String(event.over.id)
     if (!overId.startsWith('drop:')) return
     const target = Number(overId.slice(5))
-    const activeId = String(event.active.id)
     if (activeId.startsWith('option:')) {
       setAssignment(current => assignOption(current, target, Number(activeId.slice(7))))
       setSelectedOption(null)
@@ -45,7 +57,7 @@ export function FillBlankGame({ activity, disabled, onSubmit }: Props) {
   return <DndContext sensors={sensors} onDragEnd={dropOption}>
     <section aria-labelledby="fill-blank-title">
       <h2 id="fill-blank-title">Complete as lacunas</h2>
-      <p className={styles.sentence}>
+      <p className={styles.sentence} data-option-selected={selectedOption !== null || undefined}>
         {parts.map((part, index) => {
           const match = /^\{\{(\d+)\}\}$/.exec(part)
           if (!match) return <span key={'part-' + index}>{part}</span>
@@ -55,17 +67,13 @@ export function FillBlankGame({ activity, disabled, onSubmit }: Props) {
             optionIndex={optionIndex} disabled={disabled} selected={selectedOption !== null} onChoose={() => chooseSlot(slot)} />
         })}
       </p>
-      <p>Escolha uma opção e depois a lacuna onde quer colocá-la. Também é possível arrastar opções entre lacunas.</p>
+      <p>Clique numa opção para destacá-la e depois na lacuna, ou arraste-a até a lacuna. Para remover uma palavra, clique nela ou arraste-a para fora da lacuna.</p>
       <ul className={styles.options} aria-label="Opções de resposta">
         {options.map((option, index) => <li key={index + '-' + option}>
-          <DraggableOption id={'option:' + index} label={option} disabled={disabled || usedOptions.has(index)}
-            pressed={selectedOption === index} onClick={() => setSelectedOption(index)} />
+          <DraggableOption id={'option:' + index} label={option} used={usedOptions.has(index)} disabled={disabled || usedOptions.has(index)}
+            pressed={selectedOption === index} onClick={() => setSelectedOption(current => current === index ? null : index)} />
         </li>)}
       </ul>
-      <div className={styles.removeList}>
-        {slotNumbers.map(slot => assignment[slot] !== undefined && <button type="button" key={'remove-' + slot} disabled={disabled}
-          onClick={() => setAssignment(current => Object.fromEntries(Object.entries(current).filter(([key]) => Number(key) !== slot)) as SlotAssignment)}>Remover palavra da lacuna {slot}</button>)}
-      </div>
       <button type="button" disabled={disabled || !complete} onClick={() => onSubmit(fillBlankAnswer(slotNumbers, options, assignment))}>Enviar resposta</button>
     </section>
   </DndContext>
@@ -77,20 +85,21 @@ function FillSlot({ slot, value, optionIndex, disabled, selected, onChoose }: {
   const target = useDroppable({ id: 'drop:' + slot, disabled })
   const drag = useDraggable({ id: 'assigned:' + slot, disabled: disabled || optionIndex === undefined })
   return <span ref={target.setNodeRef} className={styles.slotTarget + (target.isOver ? ' ' + styles.dropTarget : '')}>
-    <button ref={drag.setNodeRef} type="button" className={styles.slot}
-      aria-label={'Lacuna ' + slot + (value === undefined ? ', vazia' : ', ' + value)}
-      {...drag.attributes} {...drag.listeners} aria-disabled={disabled || !selected}
+    <button ref={drag.setNodeRef} type="button" className={styles.slot + (selected ? ' ' + styles.slotSelectable : '')}
+      aria-label={value === undefined ? 'Lacuna ' + slot + ', vazia' : 'Lacuna ' + slot + ', preenchida com ' + value + '. Clique para remover'}
+      disabled={disabled}
+      {...drag.attributes} {...drag.listeners}
       style={{ transform: CSS.Translate.toString(drag.transform), opacity: drag.isDragging ? .5 : 1 }}
       onClick={onChoose}>{value ?? 'Escolher palavra'}</button>
   </span>
 }
 
-function DraggableOption({ id, label, disabled, pressed, onClick }: {
-  id: string; label: string; disabled: boolean; pressed: boolean; onClick: () => void
+function DraggableOption({ id, label, disabled, used, pressed, onClick }: {
+  id: string; label: string; disabled: boolean; used: boolean; pressed: boolean; onClick: () => void
 }) {
   const drag = useDraggable({ id, disabled })
   return <button ref={drag.setNodeRef} type="button" disabled={disabled}
-    {...drag.attributes} {...drag.listeners} aria-pressed={pressed}
+    {...drag.attributes} {...drag.listeners} aria-pressed={pressed} aria-label={label + (used ? ', já usada' : '')}
     style={{ transform: CSS.Translate.toString(drag.transform), opacity: drag.isDragging ? .5 : 1 }}
     onClick={onClick}>{label}</button>
 }

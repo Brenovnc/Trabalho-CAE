@@ -25,12 +25,24 @@ export type ProgressBand = { range: string; students: number }
 export type TeacherDashboardStats = { distribution: DistributionStats; daily: DailyStats[]; classrooms: ClassroomCompare[] }
 export type ClassroomStats = TeacherDashboardStats & { activityTypes: TypeStats[]; mostErrors: ErrorStats[]; progressBands: ProgressBand[] }
 export type StudentStats = Omit<ClassroomStats, 'progressBands' | 'classrooms'>
+export type StatisticsFilters = { days?: number; from?: string; to?: string; classroomId?: string; moduleId?: string; activityType?: string; minAttempts?: number; custom?: boolean }
+function statisticsQuery(filters: StatisticsFilters) {
+  const query = new URLSearchParams()
+  if (filters.days !== undefined && !filters.custom) query.set('days', String(filters.days))
+  if (filters.from) query.set('from', filters.from)
+  if (filters.to) query.set('to', filters.to)
+  if (filters.classroomId) query.set('classroomId', filters.classroomId)
+  if (filters.moduleId) query.set('moduleId', filters.moduleId)
+  if (filters.activityType) query.set('activityType', filters.activityType)
+  if (filters.minAttempts !== undefined) query.set('minAttempts', String(filters.minAttempts))
+  return query.size ? '?' + query.toString() : ''
+}
 
 export const teacherProgressApi = {
   dashboard: () => requestApi<TeacherDashboard>('/api/teacher/dashboard'),
   classroom: (classroomId: string) => requestApi<ClassroomProgress>('/api/classrooms/' + classroomId + '/progress'),
   student: (classroomId: string, studentId: string) => requestApi<StudentProgress>('/api/classrooms/' + classroomId + '/students/' + studentId + '/progress'),
-  dashboardStatistics: (days: number) => requestApi<TeacherDashboardStats>('/api/teacher/dashboard/statistics?days=' + days),
-  classroomStatistics: (classroomId: string, days: number, moduleId?: string) => requestApi<ClassroomStats>('/api/classrooms/' + classroomId + '/statistics?days=' + days + (moduleId ? '&moduleId=' + moduleId : '')),
-  studentStatistics: (classroomId: string, studentId: string, days: number, moduleId?: string) => requestApi<StudentStats>('/api/classrooms/' + classroomId + '/students/' + studentId + '/statistics?days=' + days + (moduleId ? '&moduleId=' + moduleId : '')),
+  dashboardStatistics: (filters: StatisticsFilters) => requestApi<TeacherDashboardStats>('/api/teacher/dashboard/statistics' + statisticsQuery(filters)),
+  classroomStatistics: (classroomId: string, filters: StatisticsFilters) => requestApi<ClassroomStats>('/api/classrooms/' + classroomId + '/statistics' + statisticsQuery(filters)),
+  studentStatistics: (classroomId: string, studentId: string, filters: StatisticsFilters) => requestApi<StudentStats>('/api/classrooms/' + classroomId + '/students/' + studentId + '/statistics' + statisticsQuery(filters)),
 }

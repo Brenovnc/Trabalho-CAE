@@ -24,10 +24,11 @@ export function StudentCrosswordPage({ moduleId, allWords, onNavigate, onUnautho
   }, [moduleId, allWords, onUnauthorized])
 
   const back = () => onNavigate('/student/modules/' + moduleId)
+  const showGame = !loading && !error && entries.length >= 2
   return <main className={styles.page}>
     <header className={styles.header}><button type="button" onClick={back}>Voltar ao módulo</button></header>
     <section className={styles.card} aria-labelledby="crossword-title">
-      <h1 id="crossword-title">Cruzadinha</h1>
+      {!showGame && <h1 id="crossword-title">Cruzadinha</h1>}
       {loading && <p role="status">Carregando cruzadinha…</p>}
       {error && <p role="alert">{error}</p>}
       {!loading && !error && entries.length < 2 && <div className={styles.crosswordEmpty}>
@@ -35,7 +36,7 @@ export function StudentCrosswordPage({ moduleId, allWords, onNavigate, onUnautho
         <p>{allWords ? 'O professor ainda não cadastrou palavras suficientes para este módulo.' : 'É preciso dominar mais conceitos que tenham palavras cadastradas para a cruzadinha.'}</p>
         <button type="button" onClick={back}>Voltar ao módulo</button>
       </div>}
-      {!loading && !error && entries.length >= 2 && <CrosswordGame entries={entries} onNew={() => {}} onBack={back} />}
+      {showGame && <CrosswordGame entries={entries} onNew={() => {}} onBack={back} title={<h1 id="crossword-title">Cruzadinha</h1>} />}
     </section>
   </main>
 }

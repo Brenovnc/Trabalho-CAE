@@ -39,13 +39,15 @@ public sealed class ClassroomsController(ClassroomService classrooms, StudentMan
 
     [HttpGet("{classroomId:guid}/statistics")]
     public async Task<ActionResult<ClassroomStatisticsResponse>> GetStatistics(Guid classroomId, [FromQuery] int days = 30,
-        [FromQuery] Guid? moduleId = null, CancellationToken ct = default) =>
-        Ok(await statistics.GetClassroomAsync(TeacherId, classroomId, days, moduleId, ct));
+        [FromQuery] string? from = null, [FromQuery] string? to = null, [FromQuery] Guid? moduleId = null,
+        [FromQuery] string? activityType = null, [FromQuery] int minAttempts = 3, CancellationToken ct = default) =>
+        Ok(await statistics.GetClassroomAsync(TeacherId, classroomId, days, from, to, moduleId, activityType, minAttempts, ct));
 
     [HttpGet("{classroomId:guid}/students/{studentId:guid}/statistics")]
     public async Task<ActionResult<StudentStatisticsResponse>> GetStudentStatistics(Guid classroomId, Guid studentId,
-        [FromQuery] int days = 30, [FromQuery] Guid? moduleId = null, CancellationToken ct = default) =>
-        Ok(await statistics.GetStudentAsync(TeacherId, classroomId, studentId, days, moduleId, ct));
+        [FromQuery] int days = 30, [FromQuery] string? from = null, [FromQuery] string? to = null,
+        [FromQuery] Guid? moduleId = null, [FromQuery] string? activityType = null, CancellationToken ct = default) =>
+        Ok(await statistics.GetStudentAsync(TeacherId, classroomId, studentId, days, from, to, moduleId, activityType, ct));
 
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<ClassroomDetailsResponse>> Update(Guid id, UpdateClassroomRequest request, CancellationToken ct) => Ok(await classrooms.UpdateAsync(TeacherId, id, request, ct));
