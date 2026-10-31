@@ -1,0 +1,5 @@
+**/bin
+**/obj
+.vs
+StudyPlatform.Api/appsettings.Development.json
+*.user

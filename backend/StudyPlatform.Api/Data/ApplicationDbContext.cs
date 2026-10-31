@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using StudyPlatform.Api.Models;
 using StudyPlatform.Api.Models.Activities;
 
 namespace StudyPlatform.Api.Data;
 
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-    : DbContext(options)
+    : DbContext(options), IDataProtectionKeyContext
 {
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<TeacherPhoto> TeacherPhotos => Set<TeacherPhoto>();
     public DbSet<Student> Students => Set<Student>();

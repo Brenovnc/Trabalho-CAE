@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,11 +21,23 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 var dataProtection = builder.Services.AddDataProtection()
-    .SetApplicationName("TrabalhoCAE");
+    .SetApplicationName("PERE");
 if (builder.Environment.IsDevelopment())
 {
     dataProtection.UseEphemeralDataProtectionProvider();
 }
+else
+{
+    dataProtection.PersistKeysToDbContext<ApplicationDbContext>();
+}
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
         "Connection string 'DefaultConnection' was not configured.");
@@ -114,6 +128,10 @@ if (builder.Environment.IsDevelopment())
 
 var app = builder.Build();
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseForwardedHeaders();
+}
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
@@ -133,6 +151,8 @@ app.MapGet("/health", (IConfiguration configuration) =>
         databaseConfigured = !string.IsNullOrWhiteSpace(configuredConnection),
     });
 });
+
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 
 app.MapControllers();
 
