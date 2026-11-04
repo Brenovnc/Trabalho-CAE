@@ -10,7 +10,7 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
 {
     public async Task<TeacherDashboardResponse> GetDashboardAsync(Guid teacherId, CancellationToken ct)
     {
-        var modules = await db.Modules.AsNoTracking().CountAsync(module => module.TeacherId == teacherId && module.Status != ModuleStatus.Archived, ct);
+        var modules = await db.Modules.AsNoTracking().CountAsync(module => module.TeacherId == teacherId && !module.IsCommunityListing && module.Status != ModuleStatus.Archived, ct);
         var activeClassrooms = await db.Classrooms.AsNoTracking().CountAsync(classroom => classroom.TeacherId == teacherId && classroom.Status == ClassroomStatus.Active, ct);
         var activeStudents = await db.Students.AsNoTracking().CountAsync(student => student.IsActive && student.Classroom.TeacherId == teacherId, ct);
         return new(modules, activeClassrooms, activeStudents);
@@ -25,7 +25,7 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
             .OrderBy(student => student.EnrollmentNumber)
             .Select(student => new StudentRow(student.Id, student.EnrollmentNumber, student.Name, student.IsActive, student.LastAccessAtUtc)).ToListAsync(ct);
         var conceptRows = await db.Concepts.AsNoTracking()
-            .Where(concept => concept.IsActive && concept.Module.Status == ModuleStatus.Published &&
+            .Where(concept => concept.IsActive && !concept.Module.IsCommunityListing && concept.Module.Status == ModuleStatus.Published &&
                 db.ClassroomModules.Any(link => link.ClassroomId == classroomId && link.ModuleId == concept.ModuleId))
             .OrderBy(concept => concept.Module.Title).ThenBy(concept => concept.Id)
             .Select(concept => new { concept.Id, concept.ModuleId, ModuleTitle = concept.Module.Title, concept.Module.Subject })
@@ -51,7 +51,7 @@ public sealed class TeacherProgressService(ApplicationDbContext db, TimeProvider
             .Select(item => new StudentRow(item.Id, item.EnrollmentNumber, item.Name, item.IsActive, item.LastAccessAtUtc)).SingleOrDefaultAsync(ct)
             ?? throw NotFound("O aluno não foi encontrado nesta turma.");
         var modules = await db.ClassroomModules.AsNoTracking()
-            .Where(link => link.ClassroomId == classroomId && link.Module.Status == ModuleStatus.Published)
+            .Where(link => link.ClassroomId == classroomId && !link.Module.IsCommunityListing && link.Module.Status == ModuleStatus.Published)
             .OrderBy(link => link.Module.Title).Select(link => new ModuleRow(link.ModuleId, link.Module.Title, link.Module.Subject)).ToListAsync(ct);
         var moduleIds = modules.Select(module => module.ModuleId).ToArray();
         var concepts = moduleIds.Length == 0 ? [] : await db.Concepts.AsNoTracking()

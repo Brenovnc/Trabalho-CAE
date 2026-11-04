@@ -20,13 +20,13 @@ public sealed class UpdateModuleRequest : CreateModuleRequest { }
 public sealed record ModuleSummaryResponse(
     Guid Id, string Title, string? Description, string Subject, int Version,
     ModuleStatus Status, DateTime CreatedAtUtc, DateTime UpdatedAtUtc, int ActiveConceptCount,
-    bool CrosswordEnabled = false, bool CrosswordAllowAllWords = false, bool AllowAdvanceReview = false);
+    bool CrosswordEnabled = false, bool CrosswordAllowAllWords = false, bool AllowAdvanceReview = false, string? CommunityOriginAuthor = null);
 
 public sealed record ModuleDetailsResponse(
     Guid Id, string Title, string? Description, string Subject, int Version,
     ModuleStatus Status, DateTime CreatedAtUtc, DateTime UpdatedAtUtc,
     IReadOnlyList<ConceptDetailsResponse> Concepts,
-    bool CrosswordEnabled = false, bool CrosswordAllowAllWords = false, bool AllowAdvanceReview = false);
+    bool CrosswordEnabled = false, bool CrosswordAllowAllWords = false, bool AllowAdvanceReview = false, string? CommunityOriginAuthor = null, bool IsCommunityListing = false);
 
 public sealed record PublicationIssue(Guid? ConceptId, string Code, string Message);
 public sealed record PublicationValidationResponse(bool IsValid, IReadOnlyList<PublicationIssue> Errors);

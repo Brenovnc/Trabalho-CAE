@@ -79,3 +79,21 @@
   outline: 3px solid #aab2ff;
   outline-offset: 2px;
 }
+
+.brandHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.page h1 {
+  font-size: 2.5rem;
+  text-align: center;
+  margin: .4rem 0;
+}
+
+.description, .notice {
+  text-align: center;
+}

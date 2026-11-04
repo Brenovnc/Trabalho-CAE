@@ -83,7 +83,7 @@ export function ClassroomsPage({ onProgress }: Props) {
   }
 
   return <main className={styles.page}>
-    <header className={styles.header}><div><p className={styles.eyebrow}>Organização</p><h1>Turmas e alunos</h1><p>Gerencie matrículas, módulos associados e o progresso dos alunos.</p></div></header>
+    <header className={styles.header}><div><p className={styles.eyebrow}>Organização</p><h1>Turmas e alunos</h1></div></header>
     {(error || notice) && <p role="status" className={error ? styles.error : styles.notice}>{error || notice}</p>}{busy && <p role="status">Salvando…</p>}
     {credentials && <section className={styles.oneTime}><h2>Código temporário — mostrar uma única vez</h2><p>Matrícula: {credentials.enrollmentNumber}{credentials.name ? ` · ${credentials.name}` : ''}</p><code>{credentials.temporaryAccessCode}</code><p>Expira em {new Date(credentials.expiresAtUtc).toLocaleString()}</p><button type="button" onClick={() => void copyCode()}>Copiar código</button><button type="button" onClick={() => setCredentials(null)}>Fechar</button></section>}
     {!selected ? <div className={styles.columns}>

@@ -1,8 +1,14 @@
+import { useId } from 'react'
+
 export function PereLogo({ size = 36 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 48 48" role="img" aria-label="PERE">
-    <defs><linearGradient id="pere-gradient" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#7887ff"/><stop offset="1" stopColor="#aab2ff"/></linearGradient></defs>
-    <rect x="1" y="1" width="46" height="46" rx="14" fill="url(#pere-gradient)"/>
-    <path d="M34 18a12 12 0 0 0-21-4l-2 2m0 0v-6m0 6h6M14 30a12 12 0 0 0 21 4l2-2m0 0v6m0-6h-6" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M21 17h7a5 5 0 0 1 0 10h-7zm0 0v15" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  const gradientId = `pere-gradient-${useId().replace(/:/g, '')}`
+  return <svg width={size} height={size} viewBox="0 0 512 512" role="img" aria-label="PERE">
+    <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop stopColor="#3A3F9F"/><stop offset="1" stopColor="#1E1B5B"/></linearGradient></defs>
+    <rect x="16" y="16" width="480" height="480" rx="112" fill={`url(#${gradientId})`}/>
+    <g fill="none" stroke="#E9ECF5" strokeWidth="16" strokeLinecap="butt" strokeLinejoin="miter">
+      <path d="M 111.1 217.2 A 150 150 0 0 1 400.9 217.2"/><path d="M 426.9 172.2 L 400.9 217.2 L 355.9 191.2"/>
+      <g transform="rotate(180 256 256)"><path d="M 111.1 217.2 A 150 150 0 0 1 400.9 217.2"/><path d="M 426.9 172.2 L 400.9 217.2 L 355.9 191.2"/></g>
+      <path d="M 211 188 V 324 M 211 196 H 263 A 38 38 0 0 1 263 272 H 211"/>
+    </g>
   </svg>
 }

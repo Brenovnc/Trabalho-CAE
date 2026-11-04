@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AuthForm } from './pages/auth/AuthForm'
 import { ModulesPage } from './pages/modules/ModulesPage'
+import { CommunityPage } from './pages/community/CommunityPage'
 import { ClassroomsPage } from './pages/classrooms/ClassroomsPage'
 import { StudentModulePage } from './pages/student/StudentModulePage'
 import { StudentCrosswordPage } from './pages/student/StudentCrosswordPage'
@@ -27,12 +28,14 @@ function App() {
   useEffect(() => { const pop = () => setPathname(window.location.pathname + window.location.search); window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop) }, [])
   useEffect(() => {
     let active = true
-    async function load() { try { await prepareCsrfToken(); const current = await getCurrentUser(); if (active) setUser(current) }
+    async function load() {
+      try { await prepareCsrfToken(); const current = await getCurrentUser(); if (active) setUser(current) }
       catch (error) { if (active && !(error instanceof ApiRequestError && error.status === 401)) setNotice(error instanceof Error ? error.message : 'Não foi possível conectar à API.') }
-      finally { if (active) setReady(true) } }
+      finally { if (active) setReady(true) }
+    }
     void load(); return () => { active = false }
   }, [])
-  useEffect(() => { if (user?.role !== 'TEACHER') { setProfile(null); return } let active = true; teacherProfileApi.get().then(value => { if (active) setProfile(value) }).catch(() => {}); return () => { active = false } }, [user?.id, user?.role])
+  useEffect(() => { if (user?.role !== 'TEACHER') { setProfile(null); return } let active = true; teacherProfileApi.get().then(value => { if (active) setProfile(value) }).catch(() => { }); return () => { active = false } }, [user?.id, user?.role])
   async function handleSubmit(mode: AuthMode, fields: Record<string, string>) { const authenticated = await submitAuth(mode, fields); setUser(authenticated); navigate(authenticated.role === 'STUDENT' ? '/student' : '/teacher/home'); setNotice('Autenticação concluída.') }
   async function handleLogout() { try { await logout(); setUser(null); setProfile(null); navigate('/'); setNotice('Sessão encerrada.') } catch (error) { setNotice(error instanceof Error ? error.message : 'Não foi possível encerrar a sessão.') } }
   const handleUnauthorized = useCallback(() => { setUser(null); setProfile(null); setNotice('Sua sessão expirou. Entre novamente.') }, [])
@@ -52,18 +55,28 @@ function App() {
     const oldProgress = /^\/teacher\/classrooms\/([^/]+)\/progress$/.exec(pathname)
     if (oldProgress) { navigate(`/teacher/dashboard?classroom=${encodeURIComponent(oldProgress[1])}`, true); return null }
     const path = pathname.split('?')[0]
-    const section: TeacherSection = detail || path === '/teacher/dashboard' ? 'dashboard' : path.startsWith('/teacher/modules') ? 'modules' : path.startsWith('/teacher/classrooms') ? 'classrooms' : path === '/teacher/account' ? 'account' : 'home'
-    if (!(detail || ['/teacher/home', '/teacher/dashboard', '/teacher/modules', '/teacher/classrooms', '/teacher/account'].includes(path))) navigate('/teacher/home', true)
+    const section: TeacherSection = detail || path === '/teacher/dashboard' ? 'dashboard' : path.startsWith('/teacher/modules') ? 'modules' : path.startsWith('/teacher/community') ? 'community' : path.startsWith('/teacher/classrooms') ? 'classrooms' : path === '/teacher/account' ? 'account' : 'home'
+    if (!(detail || ['/teacher/home', '/teacher/dashboard', '/teacher/modules', '/teacher/community', '/teacher/classrooms', '/teacher/account'].includes(path))) navigate('/teacher/home', true)
     let page
     if (detail) page = <StudentProgressPage classroomId={detail[1]} studentId={detail[2]} onBack={() => navigate(`/teacher/dashboard?classroom=${encodeURIComponent(detail[1])}`)} />
-    else if (section === 'modules') page = <ModulesPage />
+    else if (section === 'modules') page = <ModulesPage onNavigate={navigate} />
+    else if (section === 'community') page = <CommunityPage onNavigate={navigate} />
     else if (section === 'classrooms') page = <ClassroomsPage onProgress={classroomId => navigate(`/teacher/dashboard?classroom=${encodeURIComponent(classroomId)}`)} />
     else if (section === 'account') page = <TeacherAccountPage user={user} profile={profile} onProfileChange={setProfile} onLogout={() => void handleLogout()} />
     else if (section === 'dashboard') page = <TeacherDashboardPage onNavigate={navigate} onStudent={(classroomId, studentId) => navigate(`/teacher/classrooms/${classroomId}/students/${studentId}/progress`)} />
     else page = <TeacherHomePage user={user} onNavigate={navigate} />
     return <TeacherLayout active={section} user={user} profile={profile} onNavigate={navigate} onLogout={() => void handleLogout()}>{page}</TeacherLayout>
   }
-  return <main className={styles.page}><section className={styles.card}><PereLogo size={48} /><p className={styles.eyebrow}>PERE</p><h1>Plataforma Educacional de Repetição Espaçada</h1><p className={styles.description}>Entre para acessar seus módulos e atividades.</p>
-    {notice && <p className={styles.notice} role="status">{notice}</p>}{!ready ? <p role="status">Conectando à API…</p> : <AuthForm initialMode={pathname.startsWith('/student') ? 'student-login' : 'teacher-login'} onSubmit={handleSubmit} />}</section></main>
+  return <main className={styles.page}>
+    <section className={styles.card}>
+      <div className={styles.brandHeader}>
+        <PereLogo size={48} />
+        <p className={styles.eyebrow}>PERE</p>
+      </div>
+      <h1>Plataforma Educacional de Repetição Espaçada</h1>
+      <p className={styles.description}>Entre para acessar seus módulos e atividades.</p>
+    {notice && <p className={styles.notice} role="status">{notice}</p>}{!ready ? <p role="status">Conectando à API…</p> : <AuthForm initialMode={pathname.startsWith('/student') ? 'student-login' : 'teacher-login'} onSubmit={handleSubmit} />}
+    </section>
+    </main>
 }
 export default App

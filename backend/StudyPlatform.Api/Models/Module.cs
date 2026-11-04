@@ -16,6 +16,12 @@ public sealed class Module
     public bool AllowAdvanceReview { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsCommunityListing { get; set; }
+    public DateTime? SharedAtUtc { get; set; }
+    public int CommunityDownloadCount { get; set; }
+    public Guid? CommunitySourceModuleId { get; set; }
+    public Guid? CommunityOriginModuleId { get; set; }
+    public string? CommunityOriginAuthor { get; set; }
 
     public Teacher Teacher { get; set; } = null!;
     public ICollection<ClassroomModule> ClassroomModules { get; set; } = new List<ClassroomModule>();

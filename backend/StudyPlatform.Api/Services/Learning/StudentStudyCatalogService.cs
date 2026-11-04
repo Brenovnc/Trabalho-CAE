@@ -12,7 +12,7 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
     {
         var classroomId = await GetActiveClassroomIdAsync(studentId, ct);
         var teacherId = await db.ClassroomModules.AsNoTracking()
-            .Where(link => link.ClassroomId == classroomId && link.ModuleId == moduleId && link.Module.Status == ModuleStatus.Published)
+            .Where(link => link.ClassroomId == classroomId && link.ModuleId == moduleId && !link.Module.IsCommunityListing && link.Module.Status == ModuleStatus.Published)
             .Select(link => (Guid?)link.Module.TeacherId).SingleOrDefaultAsync(ct)
             ?? throw new ApiException(404, "student_module_not_found", "O módulo não foi encontrado.");
         return await db.TeacherPhotos.AsNoTracking().SingleOrDefaultAsync(photo => photo.TeacherId == teacherId, ct);
@@ -21,7 +21,7 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
     {
         var classroomId = await GetActiveClassroomIdAsync(studentId, ct);
         var modules = await db.ClassroomModules.AsNoTracking()
-            .Where(assignment => assignment.ClassroomId == classroomId && assignment.Module.Status == ModuleStatus.Published)
+            .Where(assignment => assignment.ClassroomId == classroomId && !assignment.Module.IsCommunityListing && assignment.Module.Status == ModuleStatus.Published)
             .OrderBy(assignment => assignment.Module.Title)
             .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject,
                 assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview,
@@ -40,7 +40,7 @@ public sealed class StudentStudyCatalogService(ApplicationDbContext db, TimeProv
         var classroomId = await GetActiveClassroomIdAsync(studentId, ct);
         var module = await db.ClassroomModules.AsNoTracking()
             .Where(assignment => assignment.ClassroomId == classroomId && assignment.ModuleId == moduleId
-                && assignment.Module.Status == ModuleStatus.Published)
+                && !assignment.Module.IsCommunityListing && assignment.Module.Status == ModuleStatus.Published)
             .Select(assignment => new { assignment.Module.Id, assignment.Module.Title, assignment.Module.Description, assignment.Module.Subject,
                 assignment.Module.CrosswordEnabled, assignment.Module.CrosswordAllowAllWords, assignment.Module.AllowAdvanceReview,
                 TeacherName = assignment.Module.Teacher.Name, TeacherInstitution = assignment.Module.Teacher.Institution,

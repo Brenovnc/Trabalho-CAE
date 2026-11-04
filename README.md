@@ -192,3 +192,8 @@ docker run --rm --name pere-frontend -p 5173:80 -e PORT=80 pere-frontend
 ```
 
 O argumento de build local aponta o frontend para a API publicada em `localhost:5080`; no deploy Vercel ele fica vazio e os rewrites mantÃªm o mesmo domÃ­nio. Depois de iniciar os dois containers, acesse o frontend em `http://localhost:5173`. Para o backend local, a origem permitida em Development Ã© `http://localhost:5173`.
+
+## Comunidade de módulos
+
+Professores podem compartilhar cópias de módulos publicados e baixar cópias independentes de outros docentes. Antes de publicar uma nova versão, aplique a migration AddCommunityModules ao banco de produção Neon com o comando de migration documentado acima.
+

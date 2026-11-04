@@ -147,6 +147,8 @@ foreach (var clue in concept.Clues) clue.IsActive = false;
 
     public async Task<ModuleDetailsResponse> PublishAsync(Guid teacherId, Guid moduleId, CancellationToken ct)
     {
+        if (await db.Modules.AnyAsync(x => x.Id == moduleId && x.TeacherId == teacherId && x.IsCommunityListing, ct))
+            throw new ApiException(400, "community_listing_not_supported", "Envios da comunidade não podem ser publicados.");
         var validation = await ValidatePublicationAsync(teacherId, moduleId, ct);
         if (!validation.IsValid)
             throw new ApiException((int)HttpStatusCode.UnprocessableEntity, "module_validation_error",

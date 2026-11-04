@@ -22,12 +22,12 @@ public sealed partial class ModuleService(
     public async Task<IReadOnlyList<ModuleSummaryResponse>> ListAsync(Guid teacherId, CancellationToken ct)
     {
         return await db.Modules.AsNoTracking()
-            .Where(module => module.TeacherId == teacherId)
+            .Where(module => module.TeacherId == teacherId && !module.IsCommunityListing)
             .OrderByDescending(module => module.UpdatedAtUtc)
             .Select(module => new ModuleSummaryResponse(module.Id, module.Title, module.Description,
                 module.Subject, module.Version, module.Status, module.CreatedAtUtc, module.UpdatedAtUtc,
                 module.Concepts.Count(concept => concept.IsActive), module.CrosswordEnabled,
-                module.CrosswordAllowAllWords, module.AllowAdvanceReview))
+                module.CrosswordAllowAllWords, module.AllowAdvanceReview, module.CommunityOriginAuthor))
             .ToListAsync(ct);
     }
 
@@ -93,6 +93,8 @@ public sealed partial class ModuleService(
             CrosswordAllowAllWords = source.CrosswordEnabled && source.CrosswordAllowAllWords,
             AllowAdvanceReview = source.AllowAdvanceReview,
             Status = ModuleStatus.Draft,
+            CommunityOriginModuleId = source.IsCommunityListing ? source.Id : source.CommunityOriginModuleId,
+            CommunityOriginAuthor = source.IsCommunityListing ? source.Teacher.Name : source.CommunityOriginAuthor,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         };
@@ -124,10 +126,32 @@ public sealed partial class ModuleService(
         return MapModule(copy);
     }
 
+    public async Task<ModuleDetailsResponse> DownloadCommunityAsync(Guid teacherId, Guid listingId, CancellationToken ct)
+    {
+        var source = await db.Modules.Where(x => x.Id == listingId && x.IsCommunityListing).Include(x => x.Teacher)
+            .Include(x => x.Concepts).ThenInclude(x => x.Keywords).Include(x => x.Concepts).ThenInclude(x => x.Clues)
+            .Include(x => x.Concepts).ThenInclude(x => x.Prerequisites).Include(x => x.Concepts).ThenInclude(x => x.RecognitionActivities)
+            .Include(x => x.Concepts).ThenInclude(x => x.FillBlankActivities).ThenInclude(x => x.Answers)
+            .Include(x => x.Concepts).ThenInclude(x => x.FillBlankActivities).ThenInclude(x => x.Distractors)
+            .Include(x => x.Concepts).ThenInclude(x => x.OrderingActivities).ThenInclude(x => x.Items)
+            .SingleOrDefaultAsync(ct) ?? throw NotFound("community_module_not_found", "O módulo não foi encontrado.");
+        var now = _now;
+        var copy = new Module { TeacherId = teacherId, Title = AddCopySuffix(source.Title), Description = source.Description, Subject = source.Subject, Version = source.Version, Status = ModuleStatus.Draft, CrosswordEnabled = source.CrosswordEnabled, CrosswordAllowAllWords = source.CrosswordAllowAllWords, AllowAdvanceReview = source.AllowAdvanceReview, CommunityOriginModuleId = source.Id, CommunityOriginAuthor = source.Teacher.Name, CreatedAtUtc = now, UpdatedAtUtc = now };
+        var map = source.Concepts.ToDictionary(x => x.Id, _ => Guid.NewGuid());
+        foreach (var concept in source.Concepts) copy.Concepts.Add(CloneConcept(concept, map[concept.Id], copy.Id, now));
+        foreach (var concept in source.Concepts) foreach (var edge in concept.Prerequisites) if (map.TryGetValue(edge.PrerequisiteConceptId, out var prereq)) copy.Concepts.Single(x => x.Id == map[concept.Id]).Prerequisites.Add(new ConceptPrerequisite { ConceptId = map[concept.Id], PrerequisiteConceptId = prereq, ModuleId = copy.Id });
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        db.Modules.Add(copy);
+        await db.SaveChangesAsync(ct);
+        await db.Modules.Where(x => x.Id == listingId).ExecuteUpdateAsync(update => update.SetProperty(x => x.CommunityDownloadCount, x => x.CommunityDownloadCount + 1), ct);
+        await tx.CommitAsync(ct); return MapModule(copy);
+    }
+
     public async Task ArchiveAsync(Guid teacherId, Guid moduleId, CancellationToken ct)
     {
         var module = await OwnedModuleQuery(teacherId, moduleId).SingleOrDefaultAsync(ct)
             ?? throw NotFound("module_not_found", "O m\u00F3dulo n\u00E3o foi encontrado.");
+        if (module.IsCommunityListing) throw BadRequest("community_listing_not_supported", "Envios da comunidade não podem ser arquivados.");
         module.Status = ModuleStatus.Archived;
         module.UpdatedAtUtc = _now;
         await db.SaveChangesAsync(ct);
@@ -143,7 +167,7 @@ public sealed partial class ModuleService(
     private IQueryable<Module> OwnedModuleQuery(Guid teacherId, Guid moduleId) =>
         db.Modules.Where(item => item.TeacherId == teacherId && item.Id == moduleId);
 
-    private IQueryable<Module> ContentGraphQuery(Guid teacherId, Guid moduleId) => OwnedModuleQuery(teacherId, moduleId)
+    private IQueryable<Module> ContentGraphQuery(Guid teacherId, Guid moduleId) => OwnedModuleQuery(teacherId, moduleId).Include(x => x.Teacher)
         .Include(item => item.Concepts).ThenInclude(item => item.Keywords)
         .Include(item => item.Concepts).ThenInclude(item => item.Clues)
         .Include(item => item.Concepts).ThenInclude(item => item.Prerequisites)
@@ -158,9 +182,9 @@ public sealed partial class ModuleService(
         module.Id, module.Title, module.Description, module.Subject, module.Version, module.Status,
         module.CreatedAtUtc, module.UpdatedAtUtc,
         module.Concepts.OrderBy(item => item.Name).Select(ConceptResponseMapper.Map).ToArray(),
-        module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview);
+        module.CrosswordEnabled, module.CrosswordAllowAllWords, module.AllowAdvanceReview, module.CommunityOriginAuthor, module.IsCommunityListing);
 
-    private static Concept CloneConcept(Concept source, Guid newId, Guid moduleId, DateTime now)
+    internal static Concept CloneConcept(Concept source, Guid newId, Guid moduleId, DateTime now)
     {
         var copy = new Concept { Id = newId, ModuleId = moduleId, ExternalId = source.ExternalId,
             Name = source.Name, Definition = source.Definition, CrosswordWord = source.CrosswordWord,

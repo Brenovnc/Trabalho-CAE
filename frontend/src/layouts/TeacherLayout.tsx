@@ -5,13 +5,14 @@ import { apiUrl } from '../services/authApi'
 import type { TeacherProfile } from '../services/teacherProfileApi'
 import styles from './TeacherLayout.module.css'
 
-export type TeacherSection = 'home' | 'dashboard' | 'modules' | 'classrooms' | 'account'
+export type TeacherSection = 'home' | 'dashboard' | 'modules' | 'community' | 'classrooms' | 'account'
 type Props = { active: TeacherSection; user: AuthenticatedUser; profile: TeacherProfile | null; onNavigate: (path: string) => void; onLogout: () => void; children: ReactNode }
 const links: { section: TeacherSection; label: string; path: string }[] = [
   { section: 'home', label: 'Página inicial', path: '/teacher/home' },
   { section: 'dashboard', label: 'Dashboard', path: '/teacher/dashboard' },
   { section: 'modules', label: 'Módulos', path: '/teacher/modules' },
   { section: 'classrooms', label: 'Turmas', path: '/teacher/classrooms' },
+  { section: 'community', label: 'Comunidade', path: '/teacher/community' },
 ]
 
 export function TeacherLayout({ active, user, profile, onNavigate, onLogout, children }: Props) {

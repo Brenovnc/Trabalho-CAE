@@ -1,0 +1,173 @@
+.page {
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 32px 24px;
+	color: #f1f3fa
+}
+
+.page header {
+	margin-bottom: 24px
+}
+
+.eyebrow {
+	color: #aab2ff;
+	font-weight: 700;
+	letter-spacing: .12em;
+	font-size: .75rem
+}
+
+.page h1 {
+	font-size: 2rem;
+	margin: .4rem 0
+}
+
+.page h2 {
+	font-size: 1.2rem;
+	margin: 0
+}
+
+.panel {
+	background: #191e29;
+	border: 1px solid #303747;
+	border-radius: 16px;
+	padding: 24px;
+	margin: 20px 0;
+	box-shadow: 0 6px 20px #00000033
+}
+
+.heading {
+	margin-bottom: 16px;
+}
+
+.heading,
+.row,
+.card {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.row {
+	padding: 14px 0;
+	border-top: 1px solid #303747
+}
+
+.row span {
+	display: grid;
+	gap: 5px
+}
+
+.row small {
+	color: #aab2c5
+}
+
+.card {
+	align-items: flex-start;
+	border: 1px solid #374154;
+	border-radius: 12px;
+	padding: 18px;
+	margin: 12px 0;
+	background: #202633
+}
+
+.card h3 {
+	margin: 0 0 6px
+}
+
+.card p {
+	margin: 7px 0
+}
+
+.description {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden
+}
+
+.filters {
+	display: flex;
+	gap: 12px;
+	margin: 18px 0
+}
+
+.filters input {
+	padding: 10px;
+	border: 1px solid #424b5f;
+	border-radius: 8px;
+	flex: 1;
+	background: #111620;
+	color: #f5f6fb
+}
+
+.filters input::placeholder {
+	color: #aab2c5
+}
+
+.chip {
+	display: inline-block;
+	background: #30254a;
+	color: #d9ddff;
+	padding: 4px 8px;
+	border-radius: 20px;
+	font-size: .8rem;
+	margin: 8px 6px 0 0
+}
+
+.shareBox {
+	padding: 12px;
+	background: #151a24;
+	border-radius: 10px;
+	margin: 16px 0
+}
+
+.notice {
+	padding: 14px;
+	border: 1px solid #396953;
+	border-radius: 10px;
+	background: #163327;
+	color: #c5f5d6;
+	display: flex;
+	gap: 12px;
+	align-items: center
+}
+
+.error {
+	color: #ffd0d5;
+	background: #371d25;
+	border: 1px solid #75434d;
+	border-radius: 10px;
+	padding: 12px
+}
+
+.panel button,
+.notice button {
+	padding: 9px 13px;
+	border: 0;
+	border-radius: 8px;
+	background: #aab2ff;
+	color: #121522;
+	cursor: pointer;
+	font-weight: 650
+}
+
+.panel button:disabled {
+	opacity: .6;
+	cursor: wait
+}
+
+@media(max-width:650px) {
+
+	.heading,
+	.row,
+	.card,
+	.filters {
+		align-items: stretch;
+		flex-direction: column
+	}
+
+	.page {
+		padding: 20px 14px
+	}
+}

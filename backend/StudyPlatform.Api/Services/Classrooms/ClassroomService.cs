@@ -58,6 +58,7 @@ public sealed class ClassroomService(ApplicationDbContext db, TimeProvider timeP
         if (classroom.Status == ClassroomStatus.Archived) throw Conflict("classroom_archived", "Não é possível associar módulos a uma turma arquivada.");
         var module = await db.Modules.SingleOrDefaultAsync(x => x.Id == moduleId && x.TeacherId == teacherId, ct)
             ?? throw NotFound("module_not_found", "O módulo não foi encontrado.");
+        if (module.IsCommunityListing) throw new ApiException(400, "community_listing_not_supported", "Envios da comunidade não podem ser associados a turmas.");
         if (module.Status != ModuleStatus.Published) throw Conflict("module_not_published", "Somente módulos publicados podem ser associados.");
         if (await db.ClassroomModules.AnyAsync(x => x.ClassroomId == classroomId && x.ModuleId == moduleId, ct))
             throw Conflict("module_already_assigned", "Este módulo já está associado à turma.");
@@ -88,7 +89,7 @@ public sealed class ClassroomService(ApplicationDbContext db, TimeProvider timeP
     {
         if (x is null) throw NotFound();
         return new(x.Id, x.Name, x.Code, x.Status.ToString(), x.CreatedAtUtc, x.UpdatedAtUtc,
-            x.ClassroomModules.Where(link => link.Module.TeacherId == x.TeacherId).OrderBy(link => link.Module.Title).Select(link => new ClassroomModuleResponse(
+            x.ClassroomModules.Where(link => link.Module.TeacherId == x.TeacherId && !link.Module.IsCommunityListing).OrderBy(link => link.Module.Title).Select(link => new ClassroomModuleResponse(
                 link.ModuleId, link.Module.Title, link.Module.Subject, link.Module.Version, link.Module.Status.ToString(), link.AssignedAtUtc)).ToArray(), x.Students.Count);
     }
     private static ApiException NotFound(string code = "classroom_not_found", string message = "A turma não foi encontrada.") => new(404, code, message);

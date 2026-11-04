@@ -10,7 +10,7 @@ public sealed class ConceptEligibilityService(ApplicationDbContext db, TimeProvi
     {
         var concept = await db.Concepts.AsNoTracking()
             .Where(x => x.Id == conceptId && x.IsActive && x.Module.Status == ModuleStatus.Published
-                && x.Module.ClassroomModules.Any(cm => cm.Classroom.Status == ClassroomStatus.Active && cm.Classroom.Students.Any(s => s.Id == studentId && s.IsActive)))
+                && !x.Module.IsCommunityListing && x.Module.ClassroomModules.Any(cm => cm.Classroom.Status == ClassroomStatus.Active && cm.Classroom.Students.Any(s => s.Id == studentId && s.IsActive)))
             .Select(x => new { Prerequisites = x.Prerequisites.Select(p => p.PrerequisiteConceptId).ToList() })
             .SingleOrDefaultAsync(cancellationToken);
         if (concept is null) return false;

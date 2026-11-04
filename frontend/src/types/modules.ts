@@ -4,6 +4,7 @@ export type ModuleSummary = {
   id: string; title: string; description: string | null; subject: string; version: number
   status: ModuleStatus; createdAtUtc: string; updatedAtUtc: string; activeConceptCount: number
   crosswordEnabled?: boolean; crosswordAllowAllWords?: boolean; allowAdvanceReview?: boolean
+  communityOriginAuthor?: string | null
 }
 
 export type RecognitionActivity = { id: string; statement: string; isCorrect: boolean; explanation: string; isActive: boolean }
@@ -22,6 +23,7 @@ export type ModuleDetails = {
   id: string; title: string; description: string | null; subject: string; version: number
   status: ModuleStatus; createdAtUtc: string; updatedAtUtc: string; concepts: Concept[]
   crosswordEnabled?: boolean; crosswordAllowAllWords?: boolean; allowAdvanceReview?: boolean
+  communityOriginAuthor?: string | null; isCommunityListing?: boolean
 }
 export type PublicationIssue = { conceptId: string | null; code: string; message: string }
 export type PublicationValidation = { isValid: boolean; errors: PublicationIssue[] }

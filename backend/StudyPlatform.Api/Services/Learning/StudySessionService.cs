@@ -259,7 +259,7 @@ private async Task<SessionActivityPresentation?> GetOrCreateCurrentAsync(StudySe
     {
         var allowed = await db.Students.AnyAsync(s => s.Id == studentId && s.IsActive && s.IsActivated
             && s.Classroom.Status == ClassroomStatus.Active
-            && s.Classroom.ClassroomModules.Any(cm => cm.ModuleId == moduleId && cm.Module.Status == ModuleStatus.Published), ct);
+            && s.Classroom.ClassroomModules.Any(cm => cm.ModuleId == moduleId && !cm.Module.IsCommunityListing && cm.Module.Status == ModuleStatus.Published), ct);
         if (!allowed) throw NotFound();
     }
 

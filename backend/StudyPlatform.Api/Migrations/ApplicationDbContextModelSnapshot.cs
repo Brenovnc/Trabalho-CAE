@@ -512,6 +512,19 @@ namespace StudyPlatform.Api.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
+                    b.Property<int>("CommunityDownloadCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CommunityOriginAuthor")
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<Guid?>("CommunityOriginModuleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CommunitySourceModuleId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -527,6 +540,12 @@ namespace StudyPlatform.Api.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsCommunityListing")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("SharedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -555,6 +574,8 @@ namespace StudyPlatform.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TeacherId");
+
+                    b.HasIndex("IsCommunityListing", "SharedAtUtc");
 
                     b.ToTable("Modules", null, t =>
                         {

@@ -28,7 +28,7 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
         if (moduleId.HasValue)
         {
             var matchingClassroomIds = await db.ClassroomModules.AsNoTracking().Where(link => link.ModuleId == moduleId.Value
-                && link.Module.Status == ModuleStatus.Published && link.Classroom.TeacherId == teacherId
+                && link.Module.Status == ModuleStatus.Published && !link.Module.IsCommunityListing && link.Classroom.TeacherId == teacherId
                 && link.Classroom.Status == ClassroomStatus.Active).Select(link => link.ClassroomId).ToArrayAsync(ct);
             classroomsQuery = classroomsQuery.Where(item => matchingClassroomIds.Contains(item.Id));
         }
@@ -108,7 +108,7 @@ public sealed class TeacherStatisticsService(ApplicationDbContext db, TimeProvid
     private async Task<Guid[]> GetPublishedModuleIdsAsync(Guid classroomId, Guid? requestedModuleId, CancellationToken ct)
     {
         var query = db.ClassroomModules.AsNoTracking().Where(link => link.ClassroomId == classroomId
-            && link.Module.Status == ModuleStatus.Published);
+            && link.Module.Status == ModuleStatus.Published && !link.Module.IsCommunityListing);
         if (requestedModuleId.HasValue) query = query.Where(link => link.ModuleId == requestedModuleId.Value);
         var moduleIds = await query.Select(link => link.ModuleId).ToArrayAsync(ct);
         if (requestedModuleId.HasValue && moduleIds.Length == 0)

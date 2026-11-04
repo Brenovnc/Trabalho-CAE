@@ -59,7 +59,7 @@ function toConceptInput(draft: ConceptDraft): ConceptInput {
   }
 }
 
-export function ModulesPage() {
+export function ModulesPage({ onNavigate = (path: string) => { window.location.href = path }, onLogout: _onLogout, onClassrooms: _onClassrooms }: { onNavigate?: (path: string) => void; onLogout?: () => void; onClassrooms?: () => void }) {
   const [modules, setModules] = useState<ModuleSummary[]>([])
   const [selected, setSelected] = useState<ModuleDetails | null>(null)
   const [moduleDraft, setModuleDraft] = useState<ModuleInput>(blankModule)
@@ -82,7 +82,7 @@ export function ModulesPage() {
       setConceptDraft(blankConcept())
     } catch (cause) { setError(messageOf(cause)) } finally { setBusy(false) }
   }
-  useEffect(() => { void refreshList().catch(cause => setError(messageOf(cause))) }, [])
+  useEffect(() => { void refreshList().catch(cause => setError(messageOf(cause))); const id = new URLSearchParams(window.location.search).get('open'); if (id) void openModule(id) }, [])
 
   async function reloadSelected(id = selected?.id) {
     if (!id) return
@@ -213,12 +213,14 @@ export function ModulesPage() {
         </div>
       ) : (
         <>
-          <button type="button" className={styles.back} onClick={() => { setSelected(null); setValidation(null); setModuleDraft(blankModule); setConceptDraft(blankConcept()) }}>← Meus módulos</button>
+          <button type="button" className={styles.back} onClick={() => { setSelected(null); setValidation(null); setModuleDraft(blankModule); setConceptDraft(blankConcept()); if (new URLSearchParams(window.location.search).get('from') === 'community') onNavigate('/teacher/community') }}>← {new URLSearchParams(window.location.search).get('from') === 'community' ? 'Comunidade' : 'Meus módulos'}</button>
           <section className={styles.panel}>
+            {selected.isCommunityListing && <p role="status">Você está editando um módulo da comunidade. As alterações valem para novos downloads; quem já baixou não é afetado.</p>}
+            {selected.communityOriginAuthor && <p className={styles.muted}>Baseado em módulo de {selected.communityOriginAuthor}</p>}
             <div className={styles.titleRow}><div><p className={styles.eyebrow}>{moduleStatusLabel(selected.status)}</p><h2>{selected.title}</h2></div><div className={styles.actions}>
               <button className={styles.secondary} disabled={busy} type="button" onClick={() => void exportModule(selected.id)}>Exportar JSON</button>
               <button className={styles.secondary} disabled={busy} type="button" onClick={() => void duplicateModule()}>Duplicar módulo</button>
-              {selected.status !== 2 && selected.status !== 'Archived' && <button className={styles.danger} disabled={busy} type="button" onClick={() => void archive()}>Arquivar</button>}
+              {!selected.isCommunityListing && selected.status !== 2 && selected.status !== 'Archived' && <button className={styles.danger} disabled={busy} type="button" onClick={() => void archive()}>Arquivar</button>}
             </div></div>
             <form className={styles.formGrid} onSubmit={saveModule}>
               <label>Título<input required maxLength={160} value={moduleDraft.title} onChange={event => setModuleDraft({ ...moduleDraft, title: event.target.value })} /></label>
@@ -232,7 +234,7 @@ export function ModulesPage() {
 
           <section className={styles.panel}>
             <div className={styles.titleRow}><div><h2>Validação de publicação</h2><p className={styles.muted}>{activeConcepts.length} conceitos ativos</p></div>
-              <button type="button" disabled={busy || !validation?.isValid || selected.status === 2 || selected.status === 'Archived'} onClick={() => void publish()}>Publicar módulo</button>
+              {!selected.isCommunityListing && <button type="button" disabled={busy || !validation?.isValid || selected.status === 2 || selected.status === 'Archived'} onClick={() => void publish()}>Publicar módulo</button>}
             </div>
             {validation && (validation.isValid ? <p className={styles.valid}>✓ Conteúdo válido para publicação. Ordenação é opcional.</p> : (
               <ul className={styles.issues}>{validation.errors.map((issue, index) => <li key={`${issue.code}-${issue.conceptId}-${index}`}><strong>{issueConcept(issue.conceptId)}:</strong> {issue.message}</li>)}</ul>
