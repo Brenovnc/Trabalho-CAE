@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ThemeToggle } from './components/ThemeToggle'
 import { AuthForm } from './pages/auth/AuthForm'
 import { ModulesPage } from './pages/modules/ModulesPage'
 import { CommunityPage } from './pages/community/CommunityPage'
@@ -44,11 +45,11 @@ function App() {
     const crossword = /^\/student\/modules\/([^/]+)\/crossword(?:\?.*)?$/.exec(pathname)
     const moduleMatch = /^\/student\/modules\/([^/?]+)(?:\?.*)?$/.exec(pathname)
     const session = /^\/student\/sessions\/([^/]+)$/.exec(pathname)
-    if (crossword) return <StudentCrosswordPage moduleId={crossword[1]} allWords={new URLSearchParams(pathname.split('?')[1] ?? '').get('allWords') === 'true'} onNavigate={navigate} onUnauthorized={handleUnauthorized} />
-    if (moduleMatch) return <StudentModulePage moduleId={moduleMatch[1]} startFreePracticeRequested={pathname.includes('practice=free')} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
-    if (session) return <StudySessionPage sessionId={session[1]} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
+    if (crossword) return <><ThemeToggle /><StudentCrosswordPage moduleId={crossword[1]} allWords={new URLSearchParams(pathname.split('?')[1] ?? '').get('allWords') === 'true'} onNavigate={navigate} onUnauthorized={handleUnauthorized} /></>
+    if (moduleMatch) return <><ThemeToggle /><StudentModulePage moduleId={moduleMatch[1]} startFreePracticeRequested={pathname.includes('practice=free')} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} /></>
+    if (session) return <><ThemeToggle /><StudySessionPage sessionId={session[1]} onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} /></>
     if (pathname !== '/student') navigate('/student', true)
-    return <StudentModulesPage onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} />
+    return <><ThemeToggle /><StudentModulesPage onNavigate={navigate} onLogout={() => void handleLogout()} onUnauthorized={handleUnauthorized} /></>
   }
   if (ready && user?.role === 'TEACHER') {
     const detail = /^\/teacher\/classrooms\/([^/]+)\/students\/([^/]+)\/progress$/.exec(pathname)
@@ -65,9 +66,9 @@ function App() {
     else if (section === 'account') page = <TeacherAccountPage user={user} profile={profile} onProfileChange={setProfile} onLogout={() => void handleLogout()} />
     else if (section === 'dashboard') page = <TeacherDashboardPage onNavigate={navigate} onStudent={(classroomId, studentId) => navigate(`/teacher/classrooms/${classroomId}/students/${studentId}/progress`)} />
     else page = <TeacherHomePage user={user} onNavigate={navigate} />
-    return <TeacherLayout active={section} user={user} profile={profile} onNavigate={navigate} onLogout={() => void handleLogout()}>{page}</TeacherLayout>
+    return <><ThemeToggle /><TeacherLayout active={section} user={user} profile={profile} onNavigate={navigate} onLogout={() => void handleLogout()}>{page}</TeacherLayout></>
   }
-  return <main className={styles.page}>
+  return <><ThemeToggle /><main className={styles.page}>
     <section className={styles.card}>
       <div className={styles.brandHeader}>
         <PereLogo size={48} />
@@ -77,6 +78,6 @@ function App() {
       <p className={styles.description}>Entre para acessar seus módulos e atividades.</p>
     {notice && <p className={styles.notice} role="status">{notice}</p>}{!ready ? <p role="status">Conectando à API…</p> : <AuthForm initialMode={pathname.startsWith('/student') ? 'student-login' : 'teacher-login'} onSubmit={handleSubmit} />}
     </section>
-    </main>
+    </main></>
 }
 export default App

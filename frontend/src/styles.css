@@ -16,4 +16,58 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: #0b0e14;
+  color: #f4f6fb;
+  transition: background-color .2s ease, color .2s ease;
 }
+
+button, input, select, textarea { font-family: inherit; }
+
+.themeToggle {
+  position: fixed;
+  z-index: 20;
+  top: .9rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 2.3rem;
+  padding: .45rem .7rem;
+  border: 1px solid #394454;
+  border-radius: 999px;
+  color: #e7ebf5;
+  background: #171d28;
+  box-shadow: 0 8px 24px rgba(0,0,0,.22);
+  cursor: pointer;
+  font-size: .82rem;
+  font-weight: 650;
+}
+.themeToggle:hover { border-color: #7c8cff; background: #202838; }
+.themeToggle span:first-child { font-size: 1.15rem; line-height: 1; }
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='light'] body { background: #f6f8fc; color: #18202d; }
+:root[data-theme='light'] .themeToggle { border-color: #cbd3e1; color: #273246; background: #fff; box-shadow: 0 8px 24px rgba(35,49,76,.12); }
+:root[data-theme='light'] .themeToggle:hover { background: #eef2ff; }
+:root[data-theme='light'] [class*='page'],
+:root[data-theme='light'] [class*='card'],
+:root[data-theme='light'] [class*='panel'],
+:root[data-theme='light'] [class*='filterCard'],
+:root[data-theme='light'] [class*='tableCard'],
+:root[data-theme='light'] [class*='chartPanel'] { color: #18202d; }
+:root[data-theme='light'] [class*='panel'],
+:root[data-theme='light'] [class*='card'],
+:root[data-theme='light'] [class*='filterCard'],
+:root[data-theme='light'] [class*='tableCard'],
+:root[data-theme='light'] [class*='chartPanel'] { background: #ffffff; border-color: #d9e0eb; }
+:root[data-theme='light'] input,
+:root[data-theme='light'] select,
+:root[data-theme='light'] textarea { color: #18202d !important; background: #fff !important; border-color: #bfc9d8 !important; }
+:root[data-theme='light'] button { color: #26324a; }
+:root[data-theme='light'] p,
+:root[data-theme='light'] small,
+:root[data-theme='light'] label,
+:root[data-theme='light'] th,
+:root[data-theme='light'] td { color: #405069; }
