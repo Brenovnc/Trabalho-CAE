@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from 'react'
 import type { StatisticsFilters as FilterValues } from '../../services/teacherProgressApi'
 import styles from './StatisticsFilters.module.css'
+import { formatIsoDate } from '../../utils/formatDate'
 
 export type FilterOption = { id: string; label: string }
 type Props = {
@@ -9,12 +10,12 @@ type Props = {
   showClassroom?: boolean; showModule?: boolean; showActivityType?: boolean; showMinAttempts?: boolean
   disablePeriod?: boolean; disableActivityType?: boolean; disableMinAttempts?: boolean
 }
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
 const shiftDate = (value: string, amount: number) => { const date = new Date(value + 'T00:00:00Z'); date.setUTCDate(date.getUTCDate() + amount); return date.toISOString().slice(0, 10) }
 export const defaultStatisticsFilters: FilterValues = { days: 30 }
 export function statisticsFiltersReady(value: FilterValues) { return !value.custom || Boolean(value.from && value.to && value.from <= value.to && (new Date(value.to + 'T00:00:00Z').getTime() - new Date(value.from + 'T00:00:00Z').getTime()) / 86400000 < 180 && value.to <= today()) }
 export function statisticsFilterSummary(value: FilterValues, classrooms: FilterOption[] = [], modules: FilterOption[] = []) {
-  const parts = value.custom ? [value.from && value.to ? value.from + ' a ' + value.to : 'Período personalizado incompleto'] : ['Últimos ' + (value.days ?? 30) + ' dias']
+  const parts = value.custom ? [value.from && value.to ? `${formatIsoDate(value.from, true)} a ${formatIsoDate(value.to, true)}` : 'Período personalizado incompleto'] : ['Últimos ' + (value.days ?? 30) + ' dias']
   if (value.classroomId) parts.push(classrooms.find(item => item.id === value.classroomId)?.label ?? 'Turma selecionada')
   if (value.moduleId) parts.push(modules.find(item => item.id === value.moduleId)?.label ?? 'Módulo selecionado')
   if (value.activityType) parts.push(({ TRUE_FALSE: 'Verdadeiro ou falso', FILL_BLANK: 'Completar lacunas', GUESS_CONCEPT: 'Jogo das pistas', ORDERING: 'Ordenação' } as Record<string, string>)[value.activityType] ?? value.activityType)

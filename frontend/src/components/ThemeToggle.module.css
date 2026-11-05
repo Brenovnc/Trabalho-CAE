@@ -1,0 +1,34 @@
+button.toggle.toggle {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  max-width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--surface);
+  line-height: 1;
+  cursor: pointer;
+}
+
+button.toggle.toggle:hover { background: var(--surface-2); }
+button.toggle.toggle:active { transform: none; background: var(--accent-soft); }
+button.toggle.toggle:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+button.toggle.toggle svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

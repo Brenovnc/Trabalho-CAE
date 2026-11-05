@@ -5,6 +5,9 @@ import type { AnswerResponse, StudentModule, StudyActivity, StudySession } from 
 import { ActivityGame } from '../../minigames/ActivityGame'
 import { SessionTimer } from '../../components/SessionTimer'
 import styles from './StudySessionPage.module.css'
+import { EmptyState } from '../../components/EmptyState'
+import { ThemeToggle } from '../../components/ThemeToggle'
+import { PageHeader } from '../../components/PageHeader'
 
 type Props = { sessionId: string; onNavigate: (path: string) => void; onLogout: () => void; onUnauthorized: () => void }
 type Feedback = { response: AnswerResponse; activity: StudyActivity }
@@ -119,7 +122,7 @@ export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthoriz
   if (error && !session) return <main className={styles.page}><p role="alert">{error}</p><button type="button" onClick={() => onNavigate('/student')}>Voltar aos módulos</button></main>
   if (!session) return null
   if (session.status === 'COMPLETED') return <main className={styles.page}>
-    <section className={styles.card} aria-labelledby="complete-title"><p className={styles.eyebrow}>Sessão finalizada</p><h1 id="complete-title">Sessão concluída</h1>
+    <section className={styles.card} aria-labelledby="complete-title"><PageHeader eyebrow="Sessão finalizada" title={<span id="complete-title">Sessão concluída</span>} />
       <p>{session.completedActivities} {session.completedActivities === 1 ? 'atividade realizada' : 'atividades realizadas'}.</p>
       {session.mode === 'FREE_PRACTICE' ? <p>A prática livre não alterou seu progresso oficial.</p> : finalModule && <section aria-label="Resumo do progresso atualizado">
         <p>Progresso: {finalModule.progressPercent}%</p>
@@ -127,17 +130,19 @@ export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthoriz
         <p>Próxima revisão: {finalModule.nextReviewAtUtc ? reviewLabel(finalModule.nextReviewAtUtc) : 'nenhuma agendada'}</p>
       </section>}
       <p>Quer continuar praticando?</p>
-      <button type="button" onClick={() => onNavigate(`/student/modules/${session.moduleId}`)}>Voltar ao módulo</button>
-      <button type="button" onClick={() => onNavigate(`/student/modules/${session.moduleId}?practice=free`)}>Estudar livremente</button>
+      <div className={styles.completeActions}>
+        <button className={styles.primaryButton} type="button" onClick={() => onNavigate(`/student/modules/${session.moduleId}`)}>Voltar ao módulo</button>
+        <button className={styles.secondaryButton} type="button" onClick={() => onNavigate(`/student/modules/${session.moduleId}?practice=free`)}>Estudar livremente</button>
+      </div>
     </section>
   </main>
   if (session.status === 'ABANDONED') return <main className={styles.page}><section className={styles.card}><h1>Sessão abandonada</h1><p>Suas respostas anteriores continuam salvas.</p><button type="button" onClick={() => onNavigate('/student')}>Voltar aos módulos</button></section></main>
 
   const activity = session.activity
   return <main className={styles.page}>
-    <header className={styles.header}><button type="button" onClick={() => onNavigate('/student')}>← Módulos</button><button type="button" onClick={onLogout}>Sair</button><button type="button" disabled={busy} onClick={() => void abandon()}>Abandonar sessão</button></header>
+    <header className={styles.header}><button type="button" onClick={() => onNavigate('/student')}>← Módulos</button><div className={styles.headerActions}><ThemeToggle /><button type="button" onClick={onLogout}>Sair</button><button type="button" disabled={busy} onClick={() => void abandon()}>Abandonar sessão</button></div></header>
     <section className={styles.card} aria-labelledby="session-title">
-      <div className={styles.sessionTop}><div><p className={styles.eyebrow}>Atividade atual</p><h1 id="session-title">Sessão de estudo</h1></div>{activity && <SessionTimer startedAtUtc={activity.startedAtUtc} />}</div>
+      <PageHeader eyebrow="Atividade atual" title={<span id="session-title">Sessão de estudo</span>} actions={activity && <SessionTimer startedAtUtc={activity.startedAtUtc} />} />
       <p className={styles.progress} aria-live="polite">{session.completedActivities + (activity ? 1 : 0)} de {Math.max(session.totalActivities, session.completedActivities + (activity ? 1 : 0))} atividades</p>
       {notice && <p className={styles.notice} role="status">{notice}</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}
@@ -146,7 +151,7 @@ export function StudySessionPage({ sessionId, onNavigate, onLogout, onUnauthoriz
         <p>{feedback.response.feedback}</p>
         {!feedback.response.wasCorrect && feedback.response.correctAnswer != null && <CorrectAnswer activity={feedback.activity} answer={feedback.response.correctAnswer} />}
         <button type="button" disabled={busy} onClick={continueAfterFeedback}>{feedback.response.sessionStatus === 'COMPLETED' ? 'Ver resumo' : 'Continuar'}</button>
-      </section> : activity ? <ActivityGame key={activity.presentationId} activity={activity} busy={busy} onReveal={reveal} onSubmit={(answer, hints) => void submit(answer, hints)} /> : <section><h2>Nenhuma atividade elegível</h2><p>Esta sessão terminou sem atividades disponíveis.</p><button type="button" onClick={() => onNavigate('/student')}>Voltar aos módulos</button></section>}
+      </section> : activity ? <ActivityGame key={activity.presentationId} activity={activity} busy={busy} onReveal={reveal} onSubmit={(answer, hints) => void submit(answer, hints)} /> : <section><EmptyState><h2>Nenhuma atividade elegível</h2><p>Esta sessão terminou sem atividades disponíveis.</p><button type="button" onClick={() => onNavigate('/student')}>Voltar aos módulos</button></EmptyState></section>}
     </section>
   </main>
 }

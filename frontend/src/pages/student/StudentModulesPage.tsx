@@ -3,7 +3,10 @@ import { ApiRequestError } from '../../services/authApi'
 import { studyApi } from '../../services/studyApi'
 import type { StudentModule } from '../../types/learning'
 import styles from './StudentPages.module.css'
+import { EmptyState } from '../../components/EmptyState'
 import { TeacherBadge } from '../../components/TeacherBadge'
+import { ThemeToggle } from '../../components/ThemeToggle'
+import { PageHeader } from '../../components/PageHeader'
 
 type Props = { onNavigate: (path: string, replace?: boolean) => void; onLogout: () => void; onUnauthorized: () => void }
 export function StudentModulesPage({ onNavigate, onLogout, onUnauthorized }: Props) {
@@ -25,10 +28,10 @@ export function StudentModulesPage({ onNavigate, onLogout, onUnauthorized }: Pro
   const orderedModules = [...modules].sort((a, b) => b.pendingReviews - a.pendingReviews || a.title.localeCompare(b.title, 'pt-BR'))
 
   return <main className={styles.page}>
-    <header className={styles.header}><div><p className={styles.eyebrow}>Área do aluno</p><h1>Escolha um módulo</h1></div><button type="button" onClick={onLogout}>Sair</button></header>
+    <PageHeader eyebrow="Área do aluno" title="Escolha um módulo" actions={<><ThemeToggle /><button type="button" onClick={onLogout}>Sair</button></>} />
     {loading && <p role="status">Carregando módulos…</p>}
     {error && <p role="alert">{error}</p>}
-    {!loading && !error && modules.length === 0 && <section className={styles.card}><h2>Nenhum módulo disponível</h2><p>Quando sua turma tiver um módulo publicado, ele aparecerá aqui.</p></section>}
+    {!loading && !error && modules.length === 0 && <section className={styles.card}><h2>Nenhum módulo disponível</h2><EmptyState>Quando sua turma tiver um módulo publicado, ele aparecerá aqui.</EmptyState></section>}
     <div className={styles.moduleGrid}>
       {orderedModules.map(module => <article className={`${styles.card} ${module.pendingReviews > 0 ? styles.pendingCard : ''}`} key={module.id}>
         <div className={styles.studentModuleHeading}><div><p className={styles.subject}>{module.subject}</p><h2>{module.title}</h2></div><TeacherBadge moduleId={module.id} name={module.teacherName} institution={module.teacherInstitution} photoVersion={module.teacherPhotoVersion} size={48} /></div>

@@ -1,12 +1,26 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#10131a" />
+    <meta name="theme-color" content="#111111" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
+    <script>
+      (() => {
+        let theme = 'dark';
+        try {
+          const saved = localStorage.getItem('pere-theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+          else if (typeof window.matchMedia === 'function') theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        } catch { /* Fall back to the current dark theme. */ }
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#111111' : '#F7F5F1');
+      })();
+    </script>
     <meta name="description" content="Plataforma educacional de repetição espaçada." />
     <title>PERE — Plataforma Educacional de Repetição Espaçada</title>
   </head>

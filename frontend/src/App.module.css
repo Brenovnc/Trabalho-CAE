@@ -1,99 +1,106 @@
-﻿.page {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 1.25rem;
+.page {
+  display:grid;
+  min-height:100vh;
+  place-items:center;
+  padding:1.25rem;
 }
 
 .card {
-  width: min(100%, 48rem);
-  padding: clamp(1.25rem, 5vw, 2.75rem);
-  border: 1px solid #303747;
-  border-radius: 1.25rem;
-  background: #191e29;
-  box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 24%);
+  position:relative;
+  width:min(100%, 48rem);
+  padding:clamp(1.25rem, 5vw, 2.75rem);
+  border:1px solid var(--border);
+  border-radius:1.25rem;
+  background:var(--surface);
+  box-shadow:0 1.5rem 5rem var(--shadow);
 }
 
+.themeToggle { position:absolute; top:1rem; right:1rem; }
+
 .eyebrow {
-  margin: 0 0 0.65rem;
-  color: #aab2ff;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  margin:0 0 0.65rem;
+  color:var(--accent);
+  font-size:0.8rem;
+  font-weight:700;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
 }
 
 .card h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 6vw, 2.8rem);
-  line-height: 1.1;
+  margin:0;
+  font-size:clamp(1.8rem, 6vw, 2.8rem);
+  line-height:1.1;
 }
 
 .description {
-  margin: 0.85rem 0 1.5rem;
-  color: #bdc5d5;
-  line-height: 1.6;
+  margin:0.85rem 0 1.5rem;
+  color:var(--text);
+  line-height:1.6;
 }
 
 .notice {
-  color: #cad0ff;
+  color:var(--success-text);
 }
 
 .identity {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-  border: 1px solid #303747;
-  border-radius: 0.85rem;
-  background: #121721;
+  margin-top:1.5rem;
+  padding:1.25rem;
+  border:1px solid var(--border);
+  border-radius:0.85rem;
+  background:var(--surface-2);
 }
 
 .identity h2 {
-  margin-top: 0;
+  margin-top:0;
 }
 
 .identity dl {
-  display: grid;
-  grid-template-columns: minmax(6rem, 0.35fr) 1fr;
-  gap: 0.65rem 1rem;
-  overflow-wrap: anywhere;
+  display:grid;
+  grid-template-columns:minmax(6rem, 0.35fr) 1fr;
+  gap:0.65rem 1rem;
+  overflow-wrap:anywhere;
 }
 
 .identity dt {
-  color: #aab2c5;
+  color:var(--accent);
 }
 
 .identity dd {
-  margin: 0;
+  margin:0;
 }
 
 .logout {
-  border: 1px solid #596684;
-  border-radius: 0.55rem;
-  padding: 0.65rem 1rem;
-  color: #fff;
-  background: #343e54;
-  cursor: pointer;
+  border:1px solid var(--btn-secondary-border);
+  border-radius:0.55rem;
+  padding:0.65rem 1rem;
+  color:var(--btn-secondary-text);
+  background:var(--btn-secondary-bg);
+  cursor:pointer;
 }
 
 .logout:focus-visible {
-  outline: 3px solid #aab2ff;
-  outline-offset: 2px;
+  outline:3px solid var(--focus-ring);
+  outline-offset:2px;
 }
 
 .brandHeader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  margin-bottom:16px;
 }
 
 .page h1 {
-  font-size: 2.5rem;
-  text-align: center;
-  margin: .4rem 0;
+  font-size:2.5rem;
+  text-align:center;
+  margin:.4rem 0;
 }
 
 .description, .notice {
-  text-align: center;
+  text-align:center;
+}
+
+@media (max-width: 480px) {
+  .page h1 { font-size: clamp(1.55rem, 7vw, 1.8rem); line-height: 1.15; }
 }

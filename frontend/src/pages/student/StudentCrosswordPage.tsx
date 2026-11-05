@@ -5,6 +5,7 @@ import type { StudentCrosswordEntry } from '../../types/learning'
 import { CrosswordGame } from '../../minigames/crossword'
 import styles from './StudentPages.module.css'
 import { errorMessage } from './StudentModulesPage'
+import { ThemeToggle } from '../../components/ThemeToggle'
 
 type Props = { moduleId: string; allWords: boolean; onNavigate: (path: string) => void; onUnauthorized: () => void }
 export function StudentCrosswordPage({ moduleId, allWords, onNavigate, onUnauthorized }: Props) {
@@ -26,7 +27,7 @@ export function StudentCrosswordPage({ moduleId, allWords, onNavigate, onUnautho
   const back = () => onNavigate('/student/modules/' + moduleId)
   const showGame = !loading && !error && entries.length >= 2
   return <main className={styles.page}>
-    <header className={styles.header}><button type="button" onClick={back}>Voltar ao módulo</button></header>
+    <header className={styles.header}><button type="button" onClick={back}>Voltar ao módulo</button><ThemeToggle /></header>
     <section className={styles.card} aria-labelledby="crossword-title">
       {!showGame && <h1 id="crossword-title">Cruzadinha</h1>}
       {loading && <p role="status">Carregando cruzadinha…</p>}

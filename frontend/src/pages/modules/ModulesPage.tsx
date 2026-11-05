@@ -3,6 +3,9 @@ import { moduleApi } from '../../services/moduleApi'
 import type { Concept, ConceptInput, ModuleDetails, ModuleInput, ModuleSummary, PublicationValidation } from '../../types/modules'
 import { moduleStatusLabel } from '../../types/modules'
 import styles from './ModulesPage.module.css'
+import { PageContainer } from '../../components/PageContainer'
+import { PageHeader } from '../../components/PageHeader'
+import { EmptyState } from '../../components/EmptyState'
 
 type ActivityDraft = { id?: string; statement: string; isCorrect: boolean; explanation: string }
 type FillDraft = { id?: string; text: string; answers: string; distractors: string }
@@ -184,8 +187,8 @@ export function ModulesPage({ onNavigate = (path: string) => { window.location.h
   const issueConcept = (id: string | null) => id ? selected?.concepts.find(concept => concept.id === id)?.name ?? 'Conceito' : 'Módulo'
 
   return (
-    <main className={styles.page}>
-      <header className={styles.header}><div><p className={styles.eyebrow}>Biblioteca pedagógica</p><h1>Gestão de módulos</h1></div></header>
+    <PageContainer className={styles.page}>
+      <PageHeader eyebrow="Biblioteca pedagógica" title="Gestão de módulos" />
       {(error || notice) && <p className={error ? styles.error : styles.notice} role="status">{error || notice}</p>}
       {busy && <p className={styles.muted} role="status">Salvando…</p>}
 
@@ -198,7 +201,7 @@ export function ModulesPage({ onNavigate = (path: string) => { window.location.h
           <section className={styles.panel}>
             <h2>Meus módulos</h2>
             <label className={styles.importControl}>Importar módulo JSON<input type="file" accept=".json,application/json" disabled={busy} onChange={(event) => void importFile(event)} /></label>
-            {loading ? <p className={styles.muted} role="status">Carregando lista...</p> : modules.length === 0 ? <p className={styles.muted}>Nenhum módulo criado.</p> : (
+            {loading ? <p className={styles.muted} role="status">Carregando lista...</p> : modules.length === 0 ? <EmptyState>Nenhum módulo criado.</EmptyState> : (
               <ul className={styles.moduleList}>{modules.map(module => (
                 <li key={module.id} className={styles.moduleRow}>
                   <button type="button" className={styles.moduleLink} onClick={() => void openModule(module.id)}>
@@ -259,7 +262,7 @@ export function ModulesPage({ onNavigate = (path: string) => { window.location.h
           </div>
         </>
       )}
-    </main>
+    </PageContainer>
   )
 }
 
@@ -306,7 +309,7 @@ function ConceptEditor({ module, value, onChange, onSubmit, onDuplicate, onDeact
       </details>
       <details className={styles.editorSection}><summary>Pr&#233;-requisitos &#8212; {value.prerequisiteIds.length}</summary>
 
-        {activeConcepts.length === 0 ? <p className={styles.muted}>Nenhum outro conceito disponível.</p> : activeConcepts.map(concept => (
+        {activeConcepts.length === 0 ? <EmptyState>Nenhum outro conceito disponível.</EmptyState> : activeConcepts.map(concept => (
           <label className={styles.check} key={concept.id}><input type="checkbox" checked={value.prerequisiteIds.includes(concept.id)} onChange={event => patch('prerequisiteIds', event.target.checked ? [...value.prerequisiteIds, concept.id] : value.prerequisiteIds.filter(id => id !== concept.id))} />{concept.name}</label>
         ))}
       </details>

@@ -2,11 +2,11 @@ import type { CSSProperties, ReactNode } from 'react'
 import styles from './Charts.module.css'
 
 export type ChartSeries = { label: string; values: (number | null)[]; color: string; marker?: 'circle' | 'square' | 'diamond' }
-type LineChartProps = { title: string; labels: string[]; series: ChartSeries[]; hasData?: boolean; emptyText?: string; percent?: boolean; size?: 'large' }
+type LineChartProps = { title: string; labels: string[]; details?: string[]; series: ChartSeries[]; hasData?: boolean; emptyText?: string; percent?: boolean; size?: 'large' }
 type BarChartProps = { title: string; labels: string[]; values: number[]; hasData?: boolean; emptyText?: string; suffix?: string; size?: 'large' }
 type StackedBarChartProps = { title: string; values: { label: string; value: number; color: string }[]; hasData?: boolean; emptyText?: string; size?: 'large' }
 
-export function LineChart({ title, labels, series, hasData = series.some(item => item.values.some(value => value !== null)), emptyText, percent = false, size }: LineChartProps) {
+export function LineChart({ title, labels, details = labels, series, hasData = series.some(item => item.values.some(value => value !== null)), emptyText, percent = false, size }: LineChartProps) {
   if (!hasData) return <ChartFrame title={title} size={size}><p className={styles.empty}>{emptyText ?? 'Ainda não há atividades neste período'}</p></ChartFrame>
   const values = series.flatMap(item => item.values.filter((value): value is number => value !== null))
   const max = Math.max(1, ...values)
@@ -36,7 +36,7 @@ export function LineChart({ title, labels, series, hasData = series.some(item =>
             {item.marker === 'square' ? <rect x={point.x - 3.5} y={point.y - 3.5} width="7" height="7" fill={item.color} /> : item.marker === 'diamond'
               ? <polygon points={point.x + ',' + (point.y - 4) + ' ' + (point.x + 4) + ',' + point.y + ' ' + point.x + ',' + (point.y + 4) + ' ' + (point.x - 4) + ',' + point.y} fill={item.color} />
               : <circle cx={point.x} cy={point.y} r="4" fill={item.color} />}
-            <title>{labels[index]}: {point.value}{percent ? '%' : ''}</title>
+            <title>{details[index]}: {point.value}{percent ? '%' : ''}</title>
           </g>)}
         </g>
       })}
@@ -44,7 +44,7 @@ export function LineChart({ title, labels, series, hasData = series.some(item =>
     </svg>
     <Legend labels={series.map(item => ({ label: item.label, color: item.color, marker: item.marker }))} />
     <table className={styles.srOnly}><caption>{title}</caption><thead><tr><th>Data</th>{series.map(item => <th key={item.label}>{item.label}</th>)}</tr></thead>
-      <tbody>{labels.map((label, index) => <tr key={label}><th>{label}</th>{series.map(item => <td key={item.label}>{item.values[index] ?? 'Sem dados'}</td>)}</tr>)}</tbody></table>
+      <tbody>{labels.map((label, index) => <tr key={label}><th>{details[index]}</th>{series.map(item => <td key={item.label}>{item.values[index] ?? 'Sem dados'}</td>)}</tr>)}</tbody></table>
   </ChartFrame>
 }
 

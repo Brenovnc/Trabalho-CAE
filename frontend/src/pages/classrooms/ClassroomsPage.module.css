@@ -1,431 +1,394 @@
 .page {
-    width: min(100% - 2.5rem, 72rem);
-    margin: 0 auto;
-    padding: 2rem 0 4rem;
-    color: #eef2ff;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-}
-
-.header h1 {
-    margin: .2rem 0 .45rem;
-    font-size: clamp(1.8rem, 4vw, 2.5rem);
-}
-
-.header p {
-    max-width: 38rem;
-    margin: 0;
-    color: #aeb8cc;
-    line-height: 1.55;
+    color:var(--text);
 }
 
 .columns {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-    gap: 1rem;
-    margin-top: 1.5rem;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    align-items:start;
+    gap:1rem;
+    margin-top:1.5rem;
 }
 
 .panel {
-    min-width: 0;
-    margin: 1rem 0;
-    padding: 1.25rem;
-    border: 1px solid #303747;
-    border-radius: 1rem;
-    background: #191e29;
+    min-width:0;
+    margin:1rem 0;
+    padding:1.25rem;
+    border:1px solid var(--border);
+    border-radius:1rem;
+    background:var(--surface);
 }
 
 .oneTime {
-    min-width: 0;
-    margin: 1rem 0;
-    padding: 1.25rem;
-    border: 1px solid #30394d;
-    border-radius: 1rem;
-    background: #171d2b;
+    min-width:0;
+    margin:1rem 0;
+    padding:1.25rem;
+    border:1px solid var(--border);
+    border-radius:1rem;
+    background:var(--accent-soft);
 }
 
 .panel h2 {
-    margin-top: 0;
-    font-size: 1.2rem;
+    margin-top:0;
+    font-size:1.2rem;
 }
 
 .page label {
-    display: grid;
-    gap: .4rem;
-    margin: .7rem 0;
-    color: #dbe0eb;
+    display:grid;
+    gap:.4rem;
+    margin:.7rem 0;
+    color:var(--text);
 }
 
 .page input,
 .page select,
 .page textarea {
-    width: 100%;
-    border: 1px solid #46516a;
-    border-radius: .55rem;
-    padding: .65rem;
-    color: inherit;
-    background: #0d1320;
-    font: inherit;
+    width:100%;
+    border:1px solid var(--border-strong);
+    border-radius:.55rem;
+    padding:.65rem;
+    color:inherit;
+    background:var(--accent-soft);
+    font:inherit;
 }
 
 .page input:focus-visible,
 .page select:focus-visible,
 .page button:focus-visible {
-    outline: 3px solid #aab2ff;
-    outline-offset: 2px;
+    outline:3px solid var(--focus-ring);
+    outline-offset:2px;
 }
 
 .page button {
-    min-height: 2.65rem;
-    margin: .2rem;
-    padding: .55rem .8rem;
-    border: 1px solid #536082;
-    border-radius: .55rem;
-    color: #f4f5fb;
-    background: #303a52;
-    font: inherit;
-    cursor: pointer;
+    min-height:2.65rem;
+    margin:.2rem;
+    padding:.55rem .8rem;
+    border:1px solid var(--border);
+    border-radius:.55rem;
+    color:var(--btn-cta-text);
+    background:var(--btn-cta-bg);
+    font:inherit;
+    cursor:pointer;
 }
 
 .page button:disabled {
-    opacity: .55;
-    cursor: not-allowed;
+    opacity:1;
+    cursor:not-allowed;
 }
 
 .form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    gap: .8rem;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:end;
+    gap:.8rem;
 }
 
 .form label {
-    flex: 1 1 12rem;
+    flex:1 1 12rem;
 }
 
 .page li {
-    padding: .55rem 0;
+    padding:.55rem 0;
 }
 
 .page small {
-    color: #aeb8cc;
+    color:var(--accent);
 }
 
-.error,
-.notice {
-    padding: .75rem 1rem;
-    border: 1px solid #75434d;
-    border-radius: .65rem;
-    color: #ffd0d5;
-    background: #371d25;
+.error {
+    padding:.75rem 1rem;
+    border:1px solid var(--danger-border);
+    border-radius:.65rem;
+    color:var(--danger-text);
+    background:var(--danger-bg);
 }
 
 .notice {
-    border-color: #396953;
-    color: #c5f5d6;
-    background: #163327;
+    padding:.75rem 1rem;
+    border:1px solid var(--success-border);
+    border-radius:.65rem;
+    border-color:var(--success-border);
+    color:var(--success-text);
+    background:var(--success-bg);
 }
 
 .oneTime {
-    border-color: #60b88c;
+    border-color:var(--success-border);
 }
 
 .oneTime code {
-    display: block;
-    margin: .75rem 0;
-    font-size: 1.6rem;
-    letter-spacing: .2rem;
-    overflow-wrap: anywhere;
+    display:block;
+    margin:.75rem 0;
+    font-size:1.6rem;
+    letter-spacing:.2rem;
+    overflow-wrap:anywhere;
 }
 
 .csvImport {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #30394d;
+    margin-top:1.5rem;
+    padding-top:1rem;
+    border-top:1px solid var(--border);
 }
 
 .csvTableWrap {
-    overflow-x: auto;
+    overflow-x:auto;
 }
 
 .csvTable {
-    width: 100%;
-    border-collapse: collapse;
-    margin: .75rem 0;
+    width:100%;
+    border-collapse:collapse;
+    margin:.75rem 0;
 }
 
 .csvTable th,
 .csvTable td {
-    padding: .55rem;
-    border: 1px solid #46516a;
-    text-align: left;
+    padding:.55rem;
+    border:1px solid var(--border);
+    text-align:left;
 }
 
 .csvTable tr[data-valid='false'] {
-    color: #ffb0b0;
-    background: #351d27;
+    color:var(--danger-text);
+    background:var(--surface-3);
 }
 
 @media(max-width:760px) {
-    .page {
-        width: min(100% - 1.25rem, 72rem);
-        padding-top: 1.25rem;
-    }
-
     .columns {
-        grid-template-columns: 1fr;
+        grid-template-columns:1fr;
     }
 
     .form {
-        align-items: stretch;
-        flex-direction: column;
+        align-items:stretch;
+        flex-direction:column;
     }
 
     .form label {
-        flex-basis: auto;
-        width: 100%;
+        flex-basis:auto;
+        width:100%;
     }
 
     .csvTable {
-        min-width: 34rem;
+        min-width:34rem;
     }
 }
 
 .classroomList {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: .75rem;
+    list-style:none;
+    margin:0;
+    padding:0;
+    display:grid;
+    gap:.75rem;
 }
 
 .classroomList .classroomRow {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    padding: 0;
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+    padding:0;
 }
 
 .panel .classroomList .classroomRow .classroomLink {
-    display: flex;
-    flex: 1;
-    min-width: 0;
-    width: 100%;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-    margin: 0;
-    border: 1px solid #374154;
-    border-radius: .65rem;
-    padding: .8rem;
-    color: #f2f3fa;
-    background: #202633;
-    text-align: left;
-    min-height: 0;
+    display:flex;
+    flex:1;
+    min-width:0;
+    width:100%;
+    align-items:center;
+    justify-content:space-between;
+    gap:.75rem;
+    margin:0;
+    border:1px solid var(--border);
+    border-radius:.65rem;
+    padding:.8rem;
+    color:var(--text);
+    background:var(--surface-3);
+    text-align:left;
+    min-height:0;
 }
 
 .panel .classroomList .classroomRow .classroomLink:hover {
-    border-color: #66718a;
-    background: #252d3c;
+    border-color:var(--border);
+    background:var(--surface-3);
 }
 
 .panel .classroomList .classroomRow .classroomLink:focus-visible {
-    outline: 3px solid #b9c0ff;
-    outline-offset: 2px;
+    outline:3px solid var(--focus-ring);
+    outline-offset:2px;
 }
 
 .classroomLink>span:first-child {
-    display: grid;
-    gap: .25rem;
+    display:grid;
+    gap:.25rem;
 }
 
 .classroomLink strong {
-    color: #f5f6fb;
+    color:var(--text);
 }
 
 .classroomLink small {
-    color: #c3cada;
-    line-height: 1.45;
-    font-size: .84rem;
+    color:var(--text);
+    line-height:1.45;
+    font-size:.84rem;
 }
 
 .status {
-    color: #d9ddff;
-    font-size: .8rem;
-    white-space: nowrap;
+    color:var(--text);
+    font-size:.8rem;
+    white-space:nowrap;
 }
 
 .classroomRow[data-archived='true'] {
-    opacity: .65;
+    opacity:.65;
 }
 
 .muted {
-    color: #aab2c5;
-    font-size: .84rem;
+    color:var(--accent);
+    font-size:.84rem;
 }
 
 @media(max-width:400px) {
     .panel .classroomList .classroomRow .classroomLink {
-        flex-wrap: wrap;
+        flex-wrap:wrap;
     }
 
     .classroomLink>span:first-child {
-        flex: 1 1 100%;
+        flex:1 1 100%;
     }
 
     .classroomLink .status {
-        margin-left: auto;
+        margin-left:auto;
     }
 }
 
 .studentTableWrap {
-    width: 100%;
-    overflow-x: auto
+    width:100%;
+    overflow-x:auto
 }
 
 .studentTable {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 .35rem
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0 .35rem
 }
 
 .studentTable th {
-    text-align: left;
-    color: #aeb8cc;
-    font-size: .78rem;
-    font-weight: 600;
-    padding: .55rem .75rem
+    text-align:left;
+    color:var(--accent);
+    font-size:.78rem;
+    font-weight:600;
+    padding:.55rem .75rem
 }
 
 .studentTable td {
-    padding: .8rem .75rem;
-    vertical-align: middle
+    padding:.8rem .75rem;
+    vertical-align:middle
 }
 
 .studentTable tr {
-    background: #171c26
+    background:var(--surface-2)
 }
 
 .studentTable tbody tr:hover {
-    background: #202735
+    background:var(--surface-3)
 }
 
 .studentTable tbody tr[data-disabled=true] {
-    opacity: .55
+    opacity:.55
 }
 
 .studentTable td:first-child {
-    border-radius: .6rem 0 0 .6rem
+    border-radius:.6rem 0 0 .6rem
 }
 
 .studentTable td:last-child {
-    border-radius: 0 .6rem .6rem 0
+    border-radius:0 .6rem .6rem 0
 }
 
 .studentStatus {
-    display: inline-block;
-    padding: .25rem .5rem;
-    border: 1px solid #424b5f;
-    border-radius: 99px;
-    font-size: .8rem
+    display:inline-block;
+    padding:.25rem .5rem;
+    border:1px solid var(--border);
+    border-radius:99px;
+    font-size:.8rem
 }
 
 .studentStatus[data-state=active] {
-    color: #b9f1ce;
-    border-color: #396953;
-    background: #163327
+    color:var(--success-text);
+    border-color:var(--success-border);
+    background:var(--success-bg)
 }
 
 .studentStatus[data-state=pending] {
-    color: #ffe1b2;
-    border-color: #79633b;
-    background: #332a19
+    color:var(--warning-text);
+    border-color:var(--warning-border);
+    background:var(--warning-bg)
 }
 
 .studentActions {
-    display: flex;
-    gap: .45rem
+    display:flex;
+    gap:.75rem
 }
 
 .studentActions button {
-    min-width: 8rem
+    min-width:8rem
 }
 
 .studentActions button+button {
-    background: #292f3c;
-    border-color: #414a5c;
-    color: #eef2fa
+    background:var(--btn-cta-bg);
+    border-color:var(--border);
+    color:var(--btn-cta-text)
 }
 
 @media(max-width:640px) {
     .studentTable thead {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0)
+        position:absolute;
+        width:1px;
+        height:1px;
+        overflow:hidden;
+        clip:rect(0, 0, 0, 0)
     }
 
     .studentTable,
     .studentTable tbody,
     .studentTable tr,
     .studentTable td {
-        display: block;
-        width: 100%
+        display:block;
+        width:100%
     }
 
     .studentTable {
-        border-spacing: 0 .65rem
+        border-spacing:0 .65rem
     }
 
     .studentTable tr {
-        padding: .35rem .75rem;
-        border: 1px solid #303747;
-        border-radius: .7rem
+        padding:.35rem .75rem;
+        border:1px solid var(--border);
+        border-radius:.7rem
     }
 
     .studentTable td {
-        display: grid;
-        grid-template-columns: 7rem minmax(0, 1fr);
-        gap: .7rem;
-        padding: .45rem 0
+        display:grid;
+        grid-template-columns:7rem minmax(0, 1fr);
+        gap:.7rem;
+        padding:.45rem 0
     }
 
     .studentTable td::before {
-        content: attr(data-label);
-        color: #aeb8cc;
-        font-size: .82rem
+        content:attr(data-label);
+        color:var(--accent);
+        font-size:.82rem
     }
 
     .studentTable td:first-child,
     .studentTable td:last-child {
-        border-radius: 0
+        border-radius:0
     }
 
     .studentActions {
-        flex-wrap: wrap
+        flex-wrap:wrap
     }
 
     .studentActions button {
-        min-width: 0;
-        flex: 1
+        min-width:0;
+        flex:1
     }
-}
-
-.header .eyebrow {
-    max-width: none;
-    margin: 0;
-    color: #aab2ff;
-    font-size: .76rem;
-    font-weight: 700;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    line-height: normal
 }

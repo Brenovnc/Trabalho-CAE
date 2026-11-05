@@ -5,6 +5,8 @@ import type { StudentModule } from '../../types/learning'
 import styles from './StudentPages.module.css'
 import { errorMessage } from './StudentModulesPage'
 import { TeacherBadge } from '../../components/TeacherBadge'
+import { ThemeToggle } from '../../components/ThemeToggle'
+import { PageHeader } from '../../components/PageHeader'
 
 type Props = { moduleId: string; startFreePracticeRequested?: boolean; onNavigate: (path: string, replace?: boolean) => void; onLogout: () => void; onUnauthorized: () => void }
 export function StudentModulePage({ moduleId, startFreePracticeRequested = false, onNavigate, onLogout, onUnauthorized }: Props) {
@@ -90,14 +92,12 @@ export function StudentModulePage({ moduleId, startFreePracticeRequested = false
   const hasFreeSession = module?.activeSessionMode === 'FREE_PRACTICE'
 
   return <main className={styles.page}>
-    <header className={styles.header}><button type="button" onClick={() => onNavigate('/student')}>← Módulos</button><button type="button" onClick={onLogout}>Sair</button></header>
+    <header className={styles.header}><button type="button" onClick={() => onNavigate('/student')}>← Módulos</button><div className={styles.headerActions}><ThemeToggle /><button type="button" onClick={onLogout}>Sair</button></div></header>
     {loading && <p role="status">Carregando módulo…</p>}
     {error && <p role="alert">{error}</p>}
     {module && <>
+      <PageHeader eyebrow={module.subject} title={module.title} actions={<TeacherBadge moduleId={module.id} name={module.teacherName} institution={module.teacherInstitution} photoVersion={module.teacherPhotoVersion} size={56} />} />
       <section className={styles.card}>
-        <div className={styles.moduleHeading}><div><p className={styles.subject}>{module.subject}</p><h1>{module.title}</h1></div>
-          <TeacherBadge moduleId={module.id} name={module.teacherName} institution={module.teacherInstitution} photoVersion={module.teacherPhotoVersion} size={56} />
-        </div>
         {module.description && <p>{module.description}</p>}
         <section className={styles.progressSummary} aria-labelledby="official-progress-title">
           <h2 id="official-progress-title">Seu progresso oficial</h2>

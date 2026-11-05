@@ -1,0 +1,184 @@
+/* Neutral Studio palette. The page starts in dark mode; both themes are explicit. */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ivory: #F7F5F1;
+  --beige: #E7DCC6;
+  --taupe: #C8B8A5;
+  --greige: #A89F91;
+  --brown: #7A5E49;
+  --charcoal: #333333;
+  --black: #111111;
+
+  --bg: var(--black);
+  --surface-1: color-mix(in srgb, var(--charcoal) 55%, var(--black));
+  --surface-2: color-mix(in srgb, var(--charcoal) 75%, var(--black));
+  --surface-3: var(--charcoal);
+  --surface: var(--surface-1);
+  --text: var(--ivory);
+  --text-heading: var(--ivory);
+  --text-muted: var(--greige);
+  --border: color-mix(in srgb, var(--taupe) 16%, transparent);
+  --border-strong: var(--taupe);
+  --accent: var(--beige);
+  --accent-soft: color-mix(in srgb, var(--beige) 18%, var(--charcoal));
+  --accent-contrast: var(--black);
+  --focus-ring: var(--beige);
+  --shadow: color-mix(in srgb, var(--black) 30%, transparent);
+  --overlay: color-mix(in srgb, var(--black) 78%, transparent);
+
+  --btn-primary-bg: var(--ivory);
+  --btn-primary-text: var(--black);
+  --btn-cta-bg: var(--beige);
+  --btn-cta-text: var(--black);
+  --btn-secondary-bg: var(--charcoal);
+  --btn-secondary-text: var(--ivory);
+  --btn-secondary-border: color-mix(in srgb, var(--taupe) 62%, transparent);
+  --btn-hover: color-mix(in srgb, var(--beige) 82%, var(--charcoal));
+  --badge-bg: var(--charcoal);
+  --badge-text: var(--ivory);
+
+  --success-bg: #163327;
+  --success-border: #396953;
+  --success-text: #C5F5D6;
+  --danger-bg: #371D25;
+  --danger-border: #89525A;
+  --danger-text: #FFD0D5;
+  --warning-bg: #332A19;
+  --warning-border: #79633B;
+  --warning-text: #FFE1B2;
+
+  /* Crossword cells stay light in both themes for comfortable reading. */
+  --game-cell-bg: var(--ivory);
+  --game-cell-text: var(--black);
+  --game-cell-border: var(--taupe);
+  --game-focus-ring: var(--brown);
+  --game-cell-active-bg: var(--beige);
+  --game-cell-focus-bg: #FFE078;
+  --game-cell-correct-bg: #9FC5A8;
+  --game-cell-correct-border: #6F9E75;
+  --game-cell-correct-text: #152017;
+  --game-cell-error-bg: #EF8D97;
+  --game-cell-error-border: #B3261E;
+  --game-cell-error-text: var(--black);
+  --game-cell-revealed-bg: #FFE29A;
+  --game-cell-revealed-border: #A87508;
+  --game-cell-revealed-text: #362400;
+
+  --chart-1: var(--beige);
+  --chart-2: var(--beige);
+  --chart-3: var(--greige);
+  --tooltip-bg: var(--surface);
+  --tooltip-text: var(--text);
+  --tooltip-border: var(--border);
+  --header-bg: var(--bg);
+
+  /* Aliases retained while CSS Modules move to the semantic tokens above. */
+  --theme-surface-canvas: var(--bg);
+  --theme-surface-main: var(--surface);
+  --theme-surface-raised: var(--surface-2);
+  --theme-surface-bright: var(--game-cell-bg);
+  --theme-surface-selected: var(--accent-soft);
+  --theme-text-primary: var(--text);
+  --theme-text-heading: var(--text-heading);
+  --theme-text-secondary: var(--text-muted);
+  --theme-text-accent: var(--accent);
+  --theme-border: var(--border);
+  --theme-border-strong: var(--border-strong);
+  --theme-focus: var(--focus-ring);
+  --theme-shadow: var(--shadow);
+  --theme-surface-green: var(--success-bg);
+  --theme-border-green: var(--success-border);
+  --theme-text-green: var(--success-text);
+  --theme-surface-red: var(--danger-bg);
+  --theme-border-red: var(--danger-border);
+  --theme-text-red: var(--danger-text);
+  --theme-button-bg: var(--btn-cta-bg);
+  --theme-button-text: var(--btn-cta-text);
+  --chart-primary: var(--chart-1);
+  --chart-positive: var(--chart-2);
+  --chart-neutral: var(--chart-3);
+  --page-bg: var(--bg);
+  --page-text: var(--text);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: var(--ivory);
+  --surface-1: color-mix(in srgb, var(--ivory) 90%, var(--beige));
+  --surface-2: color-mix(in srgb, var(--ivory) 70%, var(--beige));
+  --surface-3: var(--beige);
+  --surface: var(--surface-1);
+  --text: var(--charcoal);
+  --text-heading: var(--black);
+  --text-muted: var(--charcoal);
+  --border: color-mix(in srgb, var(--taupe) 55%, transparent);
+  --border-strong: var(--brown);
+  --accent: var(--brown);
+  --accent-soft: var(--beige);
+  --accent-contrast: var(--ivory);
+  --focus-ring: var(--brown);
+  --shadow: color-mix(in srgb, var(--brown) 10%, transparent);
+  --overlay: color-mix(in srgb, var(--black) 52%, transparent);
+
+  --btn-primary-bg: var(--black);
+  --btn-primary-text: var(--ivory);
+  --btn-cta-bg: var(--brown);
+  --btn-cta-text: var(--ivory);
+  --btn-secondary-bg: var(--beige);
+  --btn-secondary-text: var(--charcoal);
+  --btn-secondary-border: var(--taupe);
+  --btn-hover: color-mix(in srgb, var(--brown) 86%, var(--black));
+  --badge-bg: var(--beige);
+  --badge-text: var(--charcoal);
+
+  --success-bg: #E7F1E9;
+  --success-border: #9BAF9F;
+  --success-text: #24583C;
+  --danger-bg: #F5E8E9;
+  --danger-border: #D5A9AE;
+  --danger-text: #8C3340;
+  --warning-bg: #FBF2D9;
+  --warning-border: #B3914F;
+  --warning-text: #654A22;
+
+  --game-cell-border: var(--brown);
+  --game-cell-active-bg: var(--beige);
+  --chart-1: var(--brown);
+  --chart-2: var(--brown);
+  --chart-3: color-mix(in srgb, var(--charcoal) 78%, var(--ivory));
+  --tooltip-bg: var(--ivory);
+  --tooltip-text: var(--charcoal);
+  --tooltip-border: var(--taupe);
+  --header-bg: var(--bg);
+
+  --theme-surface-canvas: var(--bg);
+  --theme-surface-main: var(--surface);
+  --theme-surface-raised: var(--surface-2);
+  --theme-surface-bright: var(--game-cell-bg);
+  --theme-surface-selected: var(--accent-soft);
+  --theme-text-primary: var(--text);
+  --theme-text-heading: var(--text-heading);
+  --theme-text-secondary: var(--text-muted);
+  --theme-text-accent: var(--accent);
+  --theme-border: var(--border);
+  --theme-border-strong: var(--border-strong);
+  --theme-focus: var(--focus-ring);
+  --theme-shadow: var(--shadow);
+  --theme-surface-green: var(--success-bg);
+  --theme-border-green: var(--success-border);
+  --theme-text-green: var(--success-text);
+  --theme-surface-red: var(--danger-bg);
+  --theme-border-red: var(--danger-border);
+  --theme-text-red: var(--danger-text);
+  --theme-button-bg: var(--btn-cta-bg);
+  --theme-button-text: var(--btn-cta-text);
+  --chart-primary: var(--chart-1);
+  --chart-positive: var(--chart-2);
+  --chart-neutral: var(--chart-3);
+  --page-bg: var(--bg);
+  --page-text: var(--text);
+}
+
+:root { --logo-bg: var(--beige); --logo-mark: var(--black); }
+:root[data-theme='light'] { --logo-bg: var(--brown); --logo-mark: var(--ivory); }

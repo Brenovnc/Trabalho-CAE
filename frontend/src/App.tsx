@@ -16,6 +16,7 @@ import { ApiRequestError, getCurrentUser, logout, prepareCsrfToken, submitAuth }
 import { teacherProfileApi, type TeacherProfile } from './services/teacherProfileApi'
 import type { AuthenticatedUser, AuthMode } from './types/auth'
 import { PereLogo } from './components/PereLogo'
+import { ThemeToggle } from './components/ThemeToggle'
 import styles from './App.module.css'
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
   }
   return <main className={styles.page}>
     <section className={styles.card}>
+      <div className={styles.themeToggle}><ThemeToggle /></div>
       <div className={styles.brandHeader}>
         <PereLogo size={48} />
         <p className={styles.eyebrow}>PERE</p>

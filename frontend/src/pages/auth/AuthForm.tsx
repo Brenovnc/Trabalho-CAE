@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import type { AuthMode } from '../../types/auth'
 import styles from './AuthForm.module.css'
 
@@ -62,10 +62,32 @@ const modes: { id: AuthMode; label: string }[] = [
 ]
 
 export function AuthForm({ onSubmit, disabled = false, initialMode = 'teacher-login' }: Props) {
+  const id = useId().replaceAll(':', '')
+  const tabRefs = useRef(new Map<AuthMode, HTMLButtonElement>())
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const form = forms[mode]
+  const tabId = (tabMode: AuthMode) => `${id}-tab-${tabMode}`
+  const panelId = `${id}-panel`
+
+  function selectMode(nextMode: AuthMode) {
+    setMode(nextMode)
+    setError(null)
+  }
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) {
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % modes.length
+    else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + modes.length) % modes.length
+    else if (event.key === 'Home') nextIndex = 0
+    else if (event.key === 'End') nextIndex = modes.length - 1
+    if (nextIndex === null) return
+    event.preventDefault()
+    const nextMode = modes[nextIndex].id
+    selectMode(nextMode)
+    tabRefs.current.get(nextMode)?.focus()
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -87,19 +109,26 @@ export function AuthForm({ onSubmit, disabled = false, initialMode = 'teacher-lo
 
   return (
     <section className={styles.panel} aria-labelledby="auth-title">
-      <div className={styles.modeList} aria-label="Tipo de acesso">
-        {modes.map(item => (
+      <div className={styles.modeList} role="tablist" aria-label="Tipo de acesso">
+        {modes.map((item, index) => (
           <button
             key={item.id}
+            ref={element => { if (element) tabRefs.current.set(item.id, element); else tabRefs.current.delete(item.id) }}
+            id={tabId(item.id)}
             type="button"
-            aria-pressed={mode === item.id}
-            onClick={() => { setMode(item.id); setError(null) }}
+            role="tab"
+            aria-selected={mode === item.id}
+            aria-controls={panelId}
+            tabIndex={mode === item.id ? 0 : -1}
+            onClick={() => selectMode(item.id)}
+            onKeyDown={event => handleTabKeyDown(event, index)}
           >
             {item.label}
           </button>
         ))}
       </div>
 
+      <div className={styles.tabPanel} id={panelId} role="tabpanel" aria-labelledby={tabId(mode)} tabIndex={0}>
       <h2 id="auth-title">{form.title}</h2>
       <form onSubmit={handleSubmit}>
         {form.fields.map(field => (
@@ -121,6 +150,7 @@ export function AuthForm({ onSubmit, disabled = false, initialMode = 'teacher-lo
           {submitting ? 'Enviando…' : 'Continuar'}
         </button>
       </form>
+      </div>
     </section>
   )
 }

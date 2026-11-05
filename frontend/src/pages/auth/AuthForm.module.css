@@ -1,68 +1,96 @@
-﻿.panel {
-  padding: 1.4rem;
-  border: 1px solid #303747;
+.panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
   border-radius: 1rem;
-  background: #191e29;
+  background: var(--surface);
 }
 
 .modeList {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: thin;
 }
 
-.modeList button,
-.submit {
-  border: 1px solid #48536b;
-  border-radius: 0.6rem;
-  padding: 0.65rem 0.85rem;
-  color: #eef1fb;
-  background: #252c3a;
+.modeList button {
+  flex: 0 0 auto;
+  min-height: 2.7rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem 0.6rem 0 0;
+  color: var(--text-muted);
+  background: transparent;
+  font: inherit;
   cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
-.modeList button[aria-pressed='true'],
-.submit {
-  border-color: #8491ff;
-  background: #515fc1;
+.modeList button:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.modeList button[aria-selected='true'] {
+  position: relative;
+  z-index: 1;
+  margin-bottom: -1px;
+  border-color: var(--border);
+  border-bottom-color: var(--surface);
+  color: var(--text-heading);
+  background: var(--surface);
+}
+
+.tabPanel {
+  padding: 1.4rem;
 }
 
 .panel h2 {
-  margin: 0 0 1rem;
-  font-size: 1.35rem;
+  margin:0 0 1rem;
+  font-size:1.35rem;
 }
 
 .field {
-  display: grid;
-  gap: 0.4rem;
-  margin: 0.9rem 0;
-  color: #d7dced;
-  font-size: 0.92rem;
+  display:grid;
+  gap:0.4rem;
+  margin:0.9rem 0;
+  color:var(--text);
+  font-size:0.92rem;
 }
 
 .field input {
-  width: 100%;
-  border: 1px solid #444e62;
-  border-radius: 0.55rem;
-  padding: 0.75rem;
-  color: #f4f6fb;
-  background: #11151e;
-  font: inherit;
+  width:100%;
+  border:1px solid var(--border-strong);
+  border-radius:0.55rem;
+  padding:0.75rem;
+  color:var(--text);
+  background:var(--surface);
+  font:inherit;
 }
 
 .field input:focus-visible,
 .modeList button:focus-visible,
+.tabPanel:focus-visible,
 .submit:focus-visible {
-  outline: 3px solid #aab2ff;
-  outline-offset: 2px;
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+.submit {
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  color: var(--btn-cta-text);
+  background: var(--btn-cta-bg);
+  cursor: pointer;
 }
 
 .submit:disabled {
-  cursor: wait;
-  opacity: 0.65;
+  cursor:wait;
+  opacity:1;
 }
 
 .error {
-  color: #ffb4b4;
+  color:var(--danger-text);
 }
